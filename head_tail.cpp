@@ -10,11 +10,11 @@
 #include <algorithm>
 #include <random>
 #include <fstream>
-
+#include <Python.h>
+#include <numpy/arrayobject.h>
 #include "pcst_fast.h"
 #include "head_tail.h"
 
-#include <boost/python.hpp>
 
 using std::min;
 using std::cout;
@@ -29,7 +29,7 @@ using std::make_tuple;
 using std::numeric_limits;
 using cluster_approx::PCSTFast;
 
-HeadApprox::HeadApprox(const vector<pair<int, int> > &edges_,
+HeadApprox::HeadApprox(const vector<pair<int, int>> &edges_,
                        const vector<double> &costs_,
                        const vector<double> &prizes_,
                        int g_, int s_, double C_, double delta_)
@@ -38,7 +38,7 @@ HeadApprox::HeadApprox(const vector<pair<int, int> > &edges_,
 }
 
 
-pair<vector<int>, vector<int> > HeadApprox::run() {
+pair<vector<int>, vector<int>> HeadApprox::run() {
     double pi_min = min_pi(); // total_prizes will be calculated.
     double lambda_r = (2. * C) / (pi_min);
     double lambda_l = 1. / (4. * total_prizes);
@@ -95,7 +95,7 @@ double HeadApprox::min_pi() {
      * In this case, the fast-pcst cannot stop!!!
      */
     if (positive_min < 1e-8) {
-        if(verbose_level > 0){
+        if (verbose_level > 0) {
             cout << "warning too small positive value found " << endl;
         }
         positive_min = 1e-8;
@@ -110,7 +110,7 @@ vector<double> HeadApprox::pi_lambda(double lambda) { // pi * lambda
     return pi_lambda;
 }
 
-pair<vector<int>, vector<int> > HeadApprox::prune_forest(Forest f) {
+pair<vector<int>, vector<int>> HeadApprox::prune_forest(Forest f) {
     // case 1: usually, there is only one tree.
     if (g == 1) {
         if (cost_f(f) <= C) {
@@ -210,7 +210,7 @@ vector<HeadApprox::Tree> HeadApprox::sort_forest(Forest f) {
         trees[comp[index_u]].second.push_back(edge_index);
         trees_cost[comp[index_u]] += costs[edge_index];
     }
-    vector<pair<double, int> > trees_wei; // weights for sorting.
+    vector<pair<double, int>> trees_wei; // weights for sorting.
     for (int i = 0; i < num_cc; i++) {
         double weight;
         if (trees_cost[i] > 0.0) {
@@ -284,7 +284,7 @@ HeadApprox::Tree HeadApprox::prune_tree(Tree t, double c_prime) {
 }
 
 // Lagrange's parameter is on prizes.
-pair<vector<int>, vector<int> > HeadApprox::pcsf_gw(vector<double> prizes) {
+pair<vector<int>, vector<int>> HeadApprox::pcsf_gw(vector<double> prizes) {
     PCSTFast algo(edges, prizes, costs, PCSTFast::kNoRoot, g,
                   PCSTFast::kGWPruning, 0, nullptr);
     if (!algo.run(&result_nodes, &result_edges)) {
@@ -317,14 +317,15 @@ double HeadApprox::cost_f(Forest f) {
  * Title : Matching, Euler tours and the Chinese postman
  * Journal: Mathematical programming 5.1 (1973): 88-124.
  */
-pair<vector<int>, vector<int> > HeadApprox::dfs_tour(
+pair<vector<int>, vector<int>> HeadApprox::dfs_tour(
         const vector<int> nodes_t, const vector<int> edges_t) {
     //Make sure the tree has at least two nodes.
     if (nodes_t.size() <= 1) {
         cout << "error: The input tree has at least two nodes.";
         exit(0);
     }
-    vector<vector<tuple<int, int, bool>>> adj; // adj: <original,neighbors>
+    vector<vector<tuple<int, int, bool >>>
+            adj; // adj: <original,neighbors>
     for (auto const &node: nodes_t) {
         vector<tuple<int, int, bool>> neighbors;
         adj.push_back(neighbors);
@@ -421,7 +422,7 @@ vector<int> HeadApprox::get_nodes_map(vector<int> nodes) {
 HeadApprox::~HeadApprox() = default;
 
 
-TailApprox::TailApprox(const vector<pair<int, int> > &edges_,
+TailApprox::TailApprox(const vector<pair<int, int>> &edges_,
                        const vector<double> &costs_,
                        const vector<double> &prizes_,
                        const int g_,
@@ -434,7 +435,7 @@ TailApprox::TailApprox(const vector<pair<int, int> > &edges_,
 }
 
 
-pair<vector<int>, vector<int> > TailApprox::run() {
+pair<vector<int>, vector<int>> TailApprox::run() {
     //prizes pi[i] = b_i * b_i, all other parameters
     //are settled in the initialization.
     double pi_min = min_pi();
@@ -485,8 +486,8 @@ double TailApprox::min_pi() {
      * In this case, the fast-pcst cannot stop!!!
      */
     if (positive_min < 1e-8) {
-        if(verbose_level > 0){
-            cout << "warning too small positive value found " << endl;    
+        if (verbose_level > 0) {
+            cout << "warning too small positive value found " << endl;
         }
         positive_min = 1e-8;
     }
@@ -526,58 +527,135 @@ double TailApprox::pi_F_bar(std::vector<int> result_nodes) {
     return (total_prizes - pi_f);
 }
 
-//This fast_pcst method is a wrapper for Python interface.
-boost::python::list fast_pcst(const boost::python::list &edges_0,
-                              const boost::python::list &edges_1,
-                              const boost::python::list &costs_,
-                              const boost::python::list &prizes_,
-                              int g) {
-    //1. edges of the graph.
-    vector<pair<int, int> > edges;
+
+/*****************************************************************************
+ *
+ * This function is a Python interface.
+ * @param self just a NULL object.
+ * @param args
+ *          edges: edges.shape=(m,2), where m is # of edges in the graph.
+ *          edge_weights: edges.shape=(m, ) edge costs.
+ *          g: int
+ *          s: int
+ *          B: double
+ *          delta: double
+ *          root:                  int, root for pcst, -1 (no root).
+ *          num_active_cluster:    int, number of forest, default is 1.
+ *          pruning                string, ['strong','gw']. default is 'strong'
+ *          verbose_level:         int, >=2 print more details.
+ * @return
+ ****************************************************************************/
+static PyObject *head_proj(PyObject *self, PyObject *args) {
+    if (self != NULL) {
+        printf("unknown error.");
+        exit(0);
+    }
+    PyArrayObject *input_edges, *input_edge_costs;
+    unsigned int s_low, s_high, edge_costs_multiplier, root;
+    unsigned int num_active_cluster, verbose_level, max_num_iter;
+    char *pathway_id, *pruning;
+    if (!PyArg_ParseTuple(args, "O!O!iiizii",
+                          &PyArray_Type, &input_edges,
+                          &PyArray_Type, &input_edge_cost,
+                          &edge_costs_multiplier, &root,
+                          &num_active_cluster, &pruning,
+                          &verbose_level)) {
+        printf("something wrong");
+        exit(-1);
+    }
+    // build some parameters
+    long int len_edges = PyArray_Size((PyObject *) input_edges);
+    long int len_edge_costs = PyArray_Size((PyObject *) input_edge_costs);
+    //1. edges are the same.
+    vector<pair<int, int>> edges;
     for (int i = 0; i < len(edges_0); i++) {
         int edge_0 = boost::python::extract<int>(edges_0[i]);
         int edge_1 = boost::python::extract<int>(edges_1[i]);
         edges.emplace_back(edge_0, edge_1);
     }
-    //2. costs of the edges
-    vector<double> costs;
-    for (int i = 0; i < len(costs_); i++) {
-        double cost = boost::python::extract<double>(costs_[i]);
-        costs.push_back(cost);
-    }
-    //3. prizes of the graph.
+    //2. prizes.
     vector<double> prizes;
-    for (int i = 0; i < len(prizes_); i++) {
-        double prize = boost::python::extract<double>(prizes_[i]);
-        prizes.push_back(prize);
+    for (int i = 0; i < len(b_); i++) {
+        double b_i = boost::python::extract<double>(b_[i]);
+        prizes.push_back(b_i * b_i);
     }
-    PCSTFast pcst_pcst(edges, prizes, costs, PCSTFast::kNoRoot, g,
-                       PCSTFast::kGWPruning, 0, nullptr);
-    vector<int> result_nodes;
-    vector<int> result_edges;
-    pcst_pcst.run(&result_nodes, &result_edges);
+    //3. cost c(e) = w(e) + B / s
+    vector<double> costs;
+    for (int i = 0; i < len(weights_); i++) {
+        double w = boost::python::extract<double>(weights_[i]);
+        costs.push_back(w + B / (s * 1.0));
+    }
+    //4. cost budget C
+    double C = 2. * B;
+    HeadApprox head(edges, costs, prizes, g, s, C, delta);
+    pair<vector<int>, vector<int>> f = head.run();
+    //5. package the result nodes and edges.
     boost::python::list result;
-    for (auto const &node:result_nodes) {
+    for (auto const &node:f.first) {
         result.append(node);
     }
     result.append(-1);
-    for (auto const &edge_index:result_edges) {
+    for (auto const &edge_index:f.second) {
         result.append(edge_index);
     }
     return result;
+    PyObject *result = run_algo(input_data);
+    if (result == NULL) {
+        perror("something wrong !");
+        exit(0);
+    }
+    // to free memory
+    free(input_data);
+    free(edge_costs);
+    free(edges);
+    free(w0);
+    free(y);
+    free(x);
+    return result;
 }
 
-// This tail approximation method is a wrapper for Python interface.
+
+/*****************************************************************************
+ *
+ * // This tail approximation method is a wrapper for Python interface.
 // Notice that you need to check the following parts:
 // 1. Make sure the graph is connected.
 // 2. Make sure the input vector is not a zero vector.
-boost::python::list tail_proj(const boost::python::list &edges_0,
-                              const boost::python::list &edges_1,
-                              const boost::python::list &weights_,
-                              const boost::python::list &b_,
-                              int g, int s, double B, double nu) {
+ * This function is a Python interface.
+ * @param self just a NULL object.
+ * @param args
+ *          edges: edges.shape=(m,2), where m is # of edges in the graph.
+ *          edge_weights: edges.shape=(m, ) edge costs.
+ *          g: int
+ *          s: int
+ *          B: double
+ *          delta: double
+ *          root:                  int, root for pcst, -1 (no root).
+ *          num_active_cluster:    int, number of forest, default is 1.
+ *          pruning                string, ['strong','gw']. default is 'strong'
+ *          verbose_level:         int, >=2 print more details.
+ * @return
+ ****************************************************************************/
+static PyObject *tail_proj(PyObject *self, PyObject *args) {
+    if (self != NULL) {
+        printf("unknown error.");
+        exit(0);
+    }
+    PyArrayObject *input_edges, *input_edge_costs;
+    unsigned int s_low, s_high, edge_costs_multiplier, root;
+    unsigned int num_active_cluster, verbose_level, max_num_iter;
+    char *pathway_id, *pruning;
+    if (!PyArg_ParseTuple(args, "O!O!iiizii",
+                          &PyArray_Type, &input_edges,
+                          &PyArray_Type, &input_edge_cost,
+                          &edge_costs_multiplier, &root,
+                          &num_active_cluster, &pruning,
+                          &verbose_level)) {
+        printf("something wrong");
+        exit(-1);
+    }
     //1. edges are the same.
-    vector<pair<int, int> > edges;
+    vector<pair<int, int>> edges;
     for (int i = 0; i < len(edges_0); i++) {
         int edge_0 = boost::python::extract<int>(edges_0[i]);
         int edge_1 = boost::python::extract<int>(edges_1[i]);
@@ -612,52 +690,108 @@ boost::python::list tail_proj(const boost::python::list &edges_0,
     return result;
 }
 
-// This head approximation method is a wrapper for Python interface.
-boost::python::list head_proj(const boost::python::list &edges_0,
-                              const boost::python::list &edges_1,
-                              const boost::python::list &weights_,
-                              const boost::python::list &b_,
-                              int g, int s, double B, double delta) {
-    //1. edges are the same.
-    vector<pair<int, int> > edges;
+
+/*****************************************************************************
+ *
+ * This function is a Python interface.
+ * @param self just a NULL object.
+ * @param args
+ *          edges: edges.shape=(m,2), where m is # of edges in the graph.
+ *          edge_weights: edges.shape=(m, ) edge costs.
+ *          g: int
+ *          s: int
+ *          B: double
+ *          delta: double
+ *          root:                  int, root for pcst, -1 (no root).
+ *          num_active_cluster:    int, number of forest, default is 1.
+ *          pruning                string, ['strong','gw']. default is 'strong'
+ *          verbose_level:         int, >=2 print more details.
+ * @return
+ ****************************************************************************/
+static PyObject *fast_pcst(PyObject *self, PyObject *args) {
+    if (self != NULL) {
+        printf("unknown error.");
+        exit(0);
+    }
+    PyArrayObject *input_edges, *input_edge_costs;
+    unsigned int s_low, s_high, edge_costs_multiplier, root;
+    unsigned int num_active_cluster, verbose_level, max_num_iter;
+    char *pathway_id, *pruning;
+    if (!PyArg_ParseTuple(args, "O!O!iiizii",
+                          &PyArray_Type, &input_edges,
+                          &PyArray_Type, &input_edge_cost,
+                          &edge_costs_multiplier, &root,
+                          &num_active_cluster, &pruning,
+                          &verbose_level)) {
+        printf("something wrong");
+        exit(-1);
+    }
+    // build some parameters
+    long int len_edges = PyArray_Size((PyObject *) input_edges);
+    long int len_edge_costs = PyArray_Size((PyObject *) input_edge_costs);
+    //1. edges of the graph.
+    vector<pair<int, int>> edges;
     for (int i = 0; i < len(edges_0); i++) {
         int edge_0 = boost::python::extract<int>(edges_0[i]);
         int edge_1 = boost::python::extract<int>(edges_1[i]);
         edges.emplace_back(edge_0, edge_1);
     }
-    //2. prizes.
-    vector<double> prizes;
-    for (int i = 0; i < len(b_); i++) {
-        double b_i = boost::python::extract<double>(b_[i]);
-        prizes.push_back(b_i * b_i);
-    }
-    //3. cost c(e) = w(e) + B / s
+    //2. costs of the edges
     vector<double> costs;
-    for (int i = 0; i < len(weights_); i++) {
-        double w = boost::python::extract<double>(weights_[i]);
-        costs.push_back(w + B / (s * 1.0));
+    for (int i = 0; i < len(costs_); i++) {
+        double cost = boost::python::extract<double>(costs_[i]);
+        costs.push_back(cost);
     }
-    //4. cost budget C
-    double C = 2. * B;
-    HeadApprox head(edges, costs, prizes, g, s, C, delta);
-    pair<vector<int>, vector<int>> f = head.run();
-    //5. package the result nodes and edges.
+    //3. prizes of the graph.
+    vector<double> prizes;
+    for (int i = 0; i < len(prizes_); i++) {
+        double prize = boost::python::extract<double>(prizes_[i]);
+        prizes.push_back(prize);
+    }
+    PCSTFast pcst_pcst(edges, prizes, costs, PCSTFast::kNoRoot, g,
+                       PCSTFast::kGWPruning, 0, nullptr);
+    vector<int> result_nodes;
+    vector<int> result_edges;
+    pcst_pcst.run(&result_nodes, &result_edges);
     boost::python::list result;
-    for (auto const &node:f.first) {
+    for (auto const &node:result_nodes) {
         result.append(node);
     }
     result.append(-1);
-    for (auto const &edge_index:f.second) {
+    for (auto const &edge_index:result_edges) {
         result.append(edge_index);
     }
     return result;
 }
 
 
-// Python Interface using Boost.Python.
-BOOST_PYTHON_MODULE (head_tail) {
-    using namespace boost::python;
-    def("fast_pcst", fast_pcst);
-    def("tail_proj", tail_proj);
-    def("head_proj", head_proj);
+/*  define functions in module */
+static PyMethodDef HeadProjMethods[] = {
+        {"head_proj", head_proj, METH_VARARGS, "head projection docs"},
+        {NULL, NULL, 0, NULL}
+};
+
+#if PY_MAJOR_VERSION >= 3
+/* module initialization */
+/* Python version 3*/
+static struct PyModuleDef cModPyDem = {
+        PyModuleDef_HEAD_INIT,
+        "head_proj", "Some documentation",
+        -1,
+        HeadProjMethods
+};
+
+PyMODINIT_FUNC PyInit_cos_module(void) {
+    return PyModule_Create(&cModPyDem);
 }
+
+#else
+
+/* module initialization */
+/* Python version 2 */
+PyMODINIT_FUNC inithead_proj(void) {
+    import_array();
+    (void) Py_InitModule("head_proj", HeadProjMethods);
+}
+
+#endif

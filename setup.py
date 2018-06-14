@@ -1,15 +1,26 @@
-from setuptools import setup
-
 # specify requirements of your package here
 requirements = ['numpy']
 
+import numpy
+from distutils.core import setup, Extension
+
+# define the extension module
+proj_module = Extension('head_proj',
+                        sources=['head_tail.cpp'],
+                        include_dirs=[numpy.get_include()],
+                        libraries=['src/head_tail.h'],
+                        extra_compile_args=["-Wall"])
+
+setup(ext_modules=[proj_module])
+
 # some more details
-classifiers = (
-    "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",)
+classifiers = ("Programming Language :: Python :: 3",
+               "License :: OSI Approved :: MIT License",
+               "Operating System :: OS Independent",)
 
 # calling the setup function
+from setuptools import setup
+
 setup(name='sparse_learning',
       version='0.0.2',
       description='A wrapper for sparse learning algorithms.',
