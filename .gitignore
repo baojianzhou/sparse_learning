@@ -105,3 +105,6 @@ venv.bak/
 
 #
 .idea/
+build
+dist
+sparse_learning.egg-info
