@@ -14,7 +14,7 @@ setup(
     # sparse_learning package.
     name='sparse_learning',
     # current version is 0.0.2
-    version='0.0.3',
+    version='0.0.4',
     # this is a wrapper of head and tail projection.
     description='A wrapper for sparse learning algorithms.',
     # a long description should be here.
@@ -37,6 +37,8 @@ setup(
     # define the extension module
     ext_modules=[Extension('proj_module',
                            sources=['c/main.c'],
-                           include_dirs=[numpy.get_include()],
-                           extra_compile_args=["-Wall"])],
+                           language="c",
+                           extra_compile_args=['-std=c11'],
+                           include_dirs=[numpy.get_include(), '/usr/include/'],
+                           )],
     keywords='sparse learning, structure sparsity, head/tail projection')
