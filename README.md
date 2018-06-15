@@ -19,4 +19,4 @@ an unsupported platform tag ‘linux_x86_64’.
 
 You can workaround this by not uploading the wheel, 
 just the source code  and your users will compile it 
-on their machine.
+on their machine. 
