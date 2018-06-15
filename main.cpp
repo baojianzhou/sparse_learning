@@ -81,10 +81,10 @@ get_grid_graph(int num_nodes, bool is_rand_wei) {
 
 // Test 1,000,000 nodes. To test the scalability of fast-pcst.
 void test_fast_pcst() {
-    int num_nodes = 500000;
+    int num_nodes = 10000;
     std::random_device rd;
     std::mt19937 mt(rd());
-    std::uniform_real_distribution<double> dist(1.0, 10.0);
+    std::uniform_real_distribution<double> dist(0.01, 0.1);
     vector<double> prizes;
     for (int i = 0; i < num_nodes; i++) {
         prizes.push_back(dist(mt));
@@ -111,7 +111,7 @@ void test_fast_pcst() {
     cout << "number of nodes: " << node_result.size() << endl;
     cout << "number of edges: " << edge_result.size() << endl;
     cout << "run time: " << run_time << "ms" << endl;
-    cout << "finish test: " << endl;
+    cout << "finish test..." << endl;
 }
 
 
@@ -411,6 +411,6 @@ void test_sort_forest() {
 int main() {
     test_sort_forest();
     test_dfs_tour();
-    //main_test();
-    //test_fast_pcst();
+    main_test();
+    test_fast_pcst();
 }
