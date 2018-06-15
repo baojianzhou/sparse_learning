@@ -28,9 +28,9 @@ setup(
     include_dirs=[numpy.get_include()],
     license='MIT',
     packages=['sparse_learning'],
-    classifiers=("Programming Language :: Python :: 3",
+    classifiers=("Programming Language :: Python :: 2",
                  "License :: OSI Approved :: MIT License",
-                 "Operating System :: OS Independent",),
+                 "Operating System :: POSIX :: Linux",),
     # specify requirements of your package here
     # will add openblas in later version.
     install_requires=['numpy'],
