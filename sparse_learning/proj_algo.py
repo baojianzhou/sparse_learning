@@ -2,6 +2,18 @@
 __all__ = ["HeadTailWrapper", "head_proj", "tail_proj"]
 import numpy as np
 
+try:
+    import proj_module
+
+    try:
+        from proj_module import proj_head
+        from proj_module import proj_tail
+    except ImportError:
+        print('cannot find these two functions: proj_head, proj_tail')
+        exit(0)
+except ImportError:
+    print('cannot find the package proj_head')
+
 
 class HeadTailWrapper(object):
     """
@@ -19,13 +31,16 @@ class HeadTailWrapper(object):
             print('Error: all edge weights must be positive.')
             exit()
 
-    def run_tail(self, b, g, s, budget=None, nu=None):
+    def run_tail(self, x, g, s, budget=None, nu=None, root=None,
+                 max_iter=None):
         """ Run tail approximation algorithm
-        :param b: input vector for projection.
+        :param x: input vector for projection.
         :param g: number of connected components
         :param s: sparsity
         :param budget: budget
         :param nu: parameter nu used in the tail approx. algorithm.
+        :param root:
+        :param max_iter:
         :return: (nodes, edges,proj_vector):
         projected nodes, edges and projected vector.
         """
@@ -33,20 +48,28 @@ class HeadTailWrapper(object):
             budget = 1. * (s - g)
         if nu is None:
             nu = 2.5
+        if root is None:
+            root = -1
+        if max_iter is None:
+            max_iter = 20
         # if it is a zero vector, then just return an empty graph
-        if not np.any(b):
-            p_x = np.zeros_like(b)  # projected vector
+        if not np.any(x):
+            p_x = np.zeros_like(x)  # projected vector
             print('warning! tail input vector is a zero vector')
             return np.asarray([], dtype=int), np.asarray([], dtype=int), p_x
-        return tail_proj(self._edges, self._weights, b, g, s, budget, nu)
+        return tail_proj(self._edges, self._weights, x, g, s, root, max_iter,
+                         budget, nu)
 
-    def run_head(self, b, g, s, budget=None, delta=None):
+    def run_head(self, x, g, s, budget=None, delta=None, root=None,
+                 max_iter=None):
         """ Run head approximation algorithm.
-        :param b: input vector for projection
+        :param x: input vector for projection
         :param g:  number of connected component
         :param s: sparsity parameter
         :param budget: budget
         :param delta: parameter delta used in the head approx. algorithm.
+        :param root:
+        :param max_iter
         :return: (nodes, edges,proj_vector):
         projected nodes, edges and projected vector.
         """
@@ -54,47 +77,59 @@ class HeadTailWrapper(object):
             budget = 1. * (s - g)
         if delta is None:
             delta = 1. / 169.
+        if root is None:
+            root = -1
+        if max_iter is None:
+            max_iter = 20
         # if it is a zero vector, then just return an empty graph
-        if not np.any(b):
-            p_x = np.zeros_like(b)  # projected vector
+        if not np.any(x):
+            p_x = np.zeros_like(x)  # projected vector
             print('warning! head input vector is a zero vector')
             return np.asarray([], dtype=int), np.asarray([], dtype=int), p_x
-        return head_proj(self._edges, self._weights, b, g, s, budget, delta)
+        return head_proj(self._edges, self._weights, x, g, s, root, max_iter,
+                         budget, delta)
 
 
-def head_proj(edges, weights, b, g, s, budget, delta):
+def head_proj(edges, weights, x, g, s, root, max_iter, budget, delta):
     """
     Head projection algorithm.
     :param edges: ndarray[mx2] edges of the input graph
     :param weights:  weights of edges
-    :param b: input vector for projection
+    :param x: input vector for projection
     :param g: number of connected component
     :param s: sparsity parameter
+    :param max_iter: maximal iterations in head projection.
+    :param root: -1, no root for pcst
     :param budget:
     :param delta:
     :return:
     """
-    re = [], []
-    p_x = np.zeros_like(b)  # projected vector
-    re_nodes, re_edges = re
-    p_x[re_nodes] = b[re_nodes]
+    re_nodes, re_edges, p_x = proj_head(edges, weights, x, g, s, root,
+                                        max_iter, budget, delta)
+    print(re_nodes)
+    print(re_edges)
+    print(p_x)
     return re_nodes, re_edges, p_x
 
 
-def tail_proj(edges, weights, b, g, s, budget, nu):
+def tail_proj(edges, weights, x, g, s, root, max_iter, budget, nu):
     """
     Tail projection algorithm.
     :param edges: ndarray[mx2] edges of the input graph
     :param weights: weights of edges
-    :param b: input vector for projection
+    :param x: input vector for projection
     :param g: number of connected component
     :param s: sparsity parameter
+    :param max_iter: maximal iterations
+    :param root: -1, no root for pcst
     :param budget:
     :param nu:
     :return:
     """
-    re = [], []
-    p_x = np.zeros_like(b)  # projected vector
-    re_nodes, re_edges = re
-    p_x[re_nodes] = b[re_nodes]
+    # edges, weights, x, g, s, root, max_iter, budget, nu
+    re_nodes, re_edges, p_x = proj_tail(edges, weights, x, g, s, root,
+                                        max_iter, budget, nu)
+    print(re_nodes)
+    print(re_edges)
+    print(p_x)
     return re_nodes, re_edges, p_x

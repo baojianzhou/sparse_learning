@@ -33,23 +33,23 @@ def test_all():
     b = np.random.normal(0.0, 0.1, 25)
     b[sub_graph] = 5.
     # two options, you can use class or you can call function directly.
-    re = head_proj(edges=edges, weights=weights, b=b, g=1, s=4,
+    re = head_proj(edges=edges, weights=weights, x=b, g=1, s=4,
                    budget=3., delta=1. / 169.)
     nodes, edges, p_x = re
     print('result head nodes: ', nodes)
     print('result head edges: ', nodes)
-    re = tail_proj(edges=edges, weights=weights, b=b, g=1, s=4,
+    re = tail_proj(edges=edges, weights=weights, x=b, g=1, s=4,
                    budget=3., nu=2.5)
     nodes, edges, p_x = re
     print('result tail nodes: ', nodes)
     print('result tail edges: ', nodes)
 
     wrapper = HeadTailWrapper(edges=edges, weights=weights)
-    re = wrapper.run_head(b=b, g=1, s=4, budget=3, delta=1. / 169.)
+    re = wrapper.run_head(x=b, g=1, s=4, budget=3, delta=1. / 169.)
     nodes, edges, p_x = re
     print('result head nodes: ', nodes)
     print('result head edges: ', nodes)
-    re = wrapper.run_tail(b=b, g=1, s=4, budget=3, nu=2.5)
+    re = wrapper.run_tail(x=b, g=1, s=4, budget=3, nu=2.5)
     nodes, edges, p_x = re
     print('result tail nodes: ', nodes)
     print('result tail edges: ', nodes)

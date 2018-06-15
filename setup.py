@@ -1,35 +1,42 @@
-# specify requirements of your package here
-requirements = ['numpy']
-
+# -*- coding: utf-8 -*-
+"""
+Some documents will be added later.
+"""
 import numpy
-from distutils.core import setup, Extension
+from os import path
+from setuptools import setup
+from distutils.core import Extension
 
-# define the extension module
-proj_module = Extension('head_proj',
-                        sources=['head_tail.cpp'],
-                        include_dirs=[numpy.get_include()],
-                        libraries=['src/head_tail.h'],
-                        extra_compile_args=["-Wall"])
-
-setup(ext_modules=[proj_module])
-
-# some more details
-classifiers = ("Programming Language :: Python :: 3",
-               "License :: OSI Approved :: MIT License",
-               "Operating System :: OS Independent",)
+here = path.abspath(path.dirname(__file__))
 
 # calling the setup function
-from setuptools import setup
-
-setup(name='sparse_learning',
-      version='0.0.2',
-      description='A wrapper for sparse learning algorithms.',
-      long_description='This package collects sparse learning algorithms.',
-      url='https://github.com/baojianzhou/sparse_learning.git',
-      author='Baojian Zhou',
-      author_email='bzhou6@albany.edu',
-      license='MIT',
-      packages=['sparse_learning'],
-      classifiers=classifiers,
-      install_requires=requirements,
-      keywords='sparse learning, structure sparsity, head/tail projection')
+setup(
+    # sparse_learning package.
+    name='sparse_learning',
+    # current version is 0.0.2
+    version='0.0.3',
+    # this is a wrapper of head and tail projection.
+    description='A wrapper for sparse learning algorithms.',
+    # a long description should be here.
+    long_description='This package collects sparse learning algorithms.',
+    # url of github projection.
+    url='https://github.com/baojianzhou/sparse_learning.git',
+    # number of authors.
+    author='Baojian Zhou',
+    # my email.
+    author_email='bzhou6@albany.edu',
+    include_dirs=[numpy.get_include()],
+    license='MIT',
+    packages=['sparse_learning'],
+    classifiers=("Programming Language :: Python :: 3",
+                 "License :: OSI Approved :: MIT License",
+                 "Operating System :: OS Independent",),
+    # specify requirements of your package here
+    # will add openblas in later version.
+    install_requires=['numpy'],
+    # define the extension module
+    ext_modules=[Extension('proj_module',
+                           sources=['c/main.c'],
+                           include_dirs=[numpy.get_include()],
+                           extra_compile_args=["-Wall"])],
+    keywords='sparse learning, structure sparsity, head/tail projection')
