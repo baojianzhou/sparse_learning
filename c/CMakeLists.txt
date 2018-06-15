@@ -1,0 +1,11 @@
+cmake_minimum_required(VERSION 3.10)
+project(proj_c C)
+
+set(CMAKE_C_STANDARD 11)
+set(PYTHON_INCLUDE_DIRS /usr/include/python2.7)
+set(PYTHON_LIBRARIES /usr/lib/x86_64-linux-gnu/libpython2.7.so)
+include_directories(${PYTHON_INCLUDE_DIRS})
+add_library(proj_algo SHARED main.c)
+add_executable(proj_c main.c)
+target_link_libraries(proj_algo python2.7)
+target_link_libraries(proj_c python2.7)

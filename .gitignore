@@ -110,3 +110,6 @@ dist
 sparse_learning.egg-info
 src/build
 cmake-build-debug
+c/build
+cpp/build
+cpp/cmake-build-debug
