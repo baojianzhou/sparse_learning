@@ -1,12 +1,43 @@
 #include <stdio.h>
 #include <Python.h>
 #include <numpy/arrayobject.h>
+#include "head_tail.h"
 
-typedef float f32;
-typedef double f64;
+
+bool test_proj_app() {
+    Tree *tree = (Tree *) malloc(sizeof(Tree));
+    int nodes_t[] = {6, 7, 8, 9, 10};
+    int edges_t[] = {0, 1, 2, 3};
+    tree->nodes = nodes_t;
+    tree->edges = edges_t;
+    tree->num_nodes = 5;
+    tree->num_edges = 4;
+    tree->cost_t = 0.0;
+    tree->prize_t = 0.0;
+    print_vector(tree->nodes, tree->num_nodes);
+    Edge *edges = (Edge *) malloc(sizeof(Edge) * 7);
+    double weights[] = {1., 1., 1., 1., 1., 1., 1., 1.};
+    int edge_i[] = {6, 7, 8, 9, 2, 3, 3};
+    int edge_j[] = {7, 8, 9, 10, 7, 5, 6};
+    int s = 3, g = 1, i = 0;
+    double budget = 1.0;
+    for (i = 0; i < 7; i++) {
+        edges[i].first = edge_i[i];
+        edges[i].second = edge_j[i];
+    }
+    int num_nodes = 11;
+    int num_edges = 4;
+    ProjApp *app = create_proj_app(edges, weights, s, g, budget,
+                                   num_nodes, num_edges);
+    Tour *tour = _dfs_tour(app->h_proj, tree);
+    print_vector(tour->nodes, tour->len);
+    print_vector(tour->edges, tour->len - 1);
+    free_proj_app(app);
+    return true;
+}
 
 int main() {
-    printf("Hello, World!\n");
+    test_proj_app();
     return 0;
 }
 
