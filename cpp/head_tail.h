@@ -1,7 +1,12 @@
-//
-// Created by baojian on 6/16/18.
-//
-
+/**========================================================================
+ * This head and tail oracles are the algorithms proposed in:
+ * "Hegde, C., Indyk, P., & Schmidt, L. (2015, June). A nearly-linear time
+ * framework for graph-structured sparsity. In ICML (pp. 928-937).".
+ *
+ * Created by Baojian Zhou, Email: bzhou6@albany.edu
+ * Date: 06/15/2018
+ * License: MIT License
+ * =======================================================================*/
 #ifndef SPARSE_PROJ_HEAD_TAIL_H
 #define SPARSE_PROJ_HEAD_TAIL_H
 

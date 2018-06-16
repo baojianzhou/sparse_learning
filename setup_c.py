@@ -13,8 +13,8 @@ here = path.abspath(path.dirname(__file__))
 setup(
     # sparse_learning package.
     name='sparse_learning',
-    # current version is 0.0.6
-    version='0.0.6',
+    # current version is 0.0.2
+    version='0.0.5',
     # this is a wrapper of head and tail projection.
     description='A wrapper for sparse learning algorithms.',
     # a long description should be here.
@@ -36,9 +36,9 @@ setup(
     install_requires=['numpy'],
     # define the extension module
     ext_modules=[Extension('proj_module',
-                           sources=['cpp/main_wrapper.cpp'],
-                           language="c++",
-                           extra_compile_args=['-std=c++11', '-lpython2.7'],
+                           sources=['c/main.c'],
+                           language="c",
+                           extra_compile_args=['-std=c11'],
                            include_dirs=[numpy.get_include(), '/usr/include/'],
                            )],
     keywords='sparse learning, structure sparsity, head/tail projection')

@@ -61,7 +61,7 @@ def test_all():
     print('result tail edges: ', re_nodes)
     # edges, weights, prizes, root, g, pruning, verbose_level
     re = fast_pcst(edges=edges, weights=weights, prizes=x ** 2.,
-                   root=-1, g=1, pruning='strong', verbose_level=1)
+                   root=-1, g=1, pruning='gw', verbose_level=0)
     re_nodes, re_edges = re
     print('result pcst nodes: ', re_nodes)
     print('result pcst edges: ', re_nodes)
