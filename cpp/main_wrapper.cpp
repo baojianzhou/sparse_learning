@@ -180,8 +180,8 @@ static PyObject *proj_pcst(PyObject *self, PyObject *args) {
      * args[3]: integer np.int32  -- root(default is -1).
      * args[4]: integer np.int32  -- number of connected components returned.
      * args[5]: string string     -- pruning none, simple, gw, strong.
-     * args[6]: integer np.int32  -- verbosity level
-     * args[7]: double np.float32 -- epsilon to control the precision.
+     * args[6]: double np.float32 -- epsilon to control the precision.
+     * args[7]: integer np.int32  -- verbosity level
      * @return: (re_nodes, re_edges)
      * re_nodes: result nodes
      * re_edges: result edges
@@ -194,10 +194,10 @@ static PyObject *proj_pcst(PyObject *self, PyObject *args) {
     int g, root, verbose;
     char *pruning;
     double epsilon;
-    if (!PyArg_ParseTuple(args, "O!O!O!iizid", &PyArray_Type, &edges_,
+    if (!PyArg_ParseTuple(args, "O!O!O!iizdi", &PyArray_Type, &edges_,
                           &PyArray_Type, &prizes_, &PyArray_Type,
                           &edge_weights_, &root, &g, &pruning,
-                          &verbose, &epsilon)) { return nullptr; }
+                          &epsilon, &verbose)) { return nullptr; }
     long n = prizes_->dimensions[0]; // number of nodes
     long m = edges_->dimensions[0];     // number of edges
     vector<pair<int, int> > edges;
@@ -215,9 +215,9 @@ static PyObject *proj_pcst(PyObject *self, PyObject *args) {
         auto *element = (double *) PyArray_GETPTR1(prizes_, i);
         prizes.push_back((*element));
     }
-    PCSTFast::PruningMethod pm = PCSTFast::parse_pruning_method(pruning);
-    PCSTFast pcst_pcst(edges, prizes, costs, root, g, pm,
-                       verbose, epsilon, nullptr);
+    PCSTFast pcst_pcst(edges, prizes, costs, root, g,
+                       PCSTFast::parse_pruning_method(pruning),
+                       epsilon, verbose, nullptr);
     vector<int> result_nodes;
     vector<int> result_edges;
     if (!pcst_pcst.run(&result_nodes, &result_edges)) {

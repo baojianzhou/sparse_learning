@@ -346,8 +346,8 @@ namespace cluster_approx {
                  int root_,
                  int target_num_active_clusters_,
                  PruningMethod pruning_,
-                 int verbosity_level_,
                  double epsilon,
+                 int verbosity_level_,
                  void (*output_function_)(const char*))
         : edges(edges_), prizes(prizes_), costs(costs_), root(root_),
         target_num_active_clusters(target_num_active_clusters_),

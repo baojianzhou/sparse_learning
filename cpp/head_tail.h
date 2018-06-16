@@ -58,7 +58,7 @@ public:
 
     // given an input vector b, return a forest F
     pair<vector<int>, vector<int> > run() {
-        int num_iter =0;
+        int num_iter = 0;
         double pi_min = min_pi(); // total_prizes will be calculated.
         double lambda_r = (2. * C) / (pi_min);
         double lambda_l = 1. / (4. * total_prizes);
@@ -84,7 +84,10 @@ public:
             }
             num_iter++;
             if (num_iter >= max_iter) {
-                cout << "warning! " << endl; // TODO Add a warning here.
+                if (verbose > 0) {
+                    // TODO Add a warning here.
+                    cout << "warning! " << endl;
+                }
             }
         } // binary search over the Lagrange parameter lambda
         Forest f_l = pcsf_gw(pi_lambda(lambda_l));
@@ -184,7 +187,7 @@ private:
     pair<vector<int>, vector<int> > pcsf_gw(const vector<double> &prizes) {
         PCSTFast algo(edges, prizes, costs, root, g,
                       PCSTFast::parse_pruning_method(pruning),
-                      verbose, epsilon, nullptr);
+                      epsilon, verbose, nullptr);
         if (!algo.run(&result_nodes, &result_edges)) {
             cout << "Error: run pcst_fast error." << endl;
             exit(0);
@@ -541,8 +544,11 @@ public:
                 lambda_l = lambda_m;
             }
             num_iter++;
+            // TODO Add a warning here.
             if (num_iter >= max_iter) {
-                cout << "warning! " << endl; // TODO Add a warning here.
+                if (verbose > 0) {
+                    cout << "warning! " << endl;
+                }
             }
         } // while
         fast_pcsf(cost_lambda(lambda_l));
@@ -622,7 +628,7 @@ private:
     bool fast_pcsf(const vector<double> &costs) {
         PCSTFast algo(edges, prizes, costs, PCSTFast::kNoRoot,
                       g, PCSTFast::parse_pruning_method(pruning),
-                      verbose, epsilon, nullptr);
+                      epsilon, verbose, nullptr);
         return algo.run(&result_nodes, &result_edges);
     }
 
