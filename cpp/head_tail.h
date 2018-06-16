@@ -45,19 +45,25 @@ public:
     HeadApprox(const vector<pair<int, int> > &edges_,
                const vector<double> &costs_,
                const vector<double> &prizes_,
-               int g_, int s_, double C_, double delta_)
-            : edges(edges_), costs(costs_), prizes(prizes_),
-              g(g_), s(s_), C(C_), delta(delta_), verbose_level(0) {
+               int g_, int s_, double C_, double delta_,
+               int max_iter_, double err_tol_,
+               int root_, char *pruning_, double epsilon_, int verbose_) :
+            edges(edges_), costs(costs_), prizes(prizes_),
+            g(g_), s(s_), C(C_), delta(delta_),
+            max_iter(max_iter_), err_tol(err_tol_), root(root_),
+            pruning(pruning_), epsilon(epsilon_), verbose(verbose_) {
+        total_prizes = 0.0;
     }
 
 
     // given an input vector b, return a forest F
-    pair<vector<int>, vector<int> > run(){
+    pair<vector<int>, vector<int> > run() {
+        int num_iter =0;
         double pi_min = min_pi(); // total_prizes will be calculated.
         double lambda_r = (2. * C) / (pi_min);
         double lambda_l = 1. / (4. * total_prizes);
         double epsilon = (delta * C) / (2. * total_prizes);
-        if (verbose_level > 0) {
+        if (verbose > 0) {
             cout << "lambda_r: " << lambda_r << endl;
             cout << "lambda_l: " << lambda_l << endl;
             cout << "total_prizes: " << total_prizes << endl;
@@ -70,16 +76,15 @@ public:
         }// ensure that we have invariant c(F_r) > 2 C
         while ((lambda_r - lambda_l) > epsilon) {
             double lambda_m = (lambda_l + lambda_r) / 2.;
-            if (verbose_level > 0) {
-                cout << "lambda_r: " << lambda_r << ", lambda_l: " << lambda_l;
-                cout << ", lambda_m: " << lambda_m << ", gap: ";
-                cout << (lambda_r - lambda_l) << endl;
-            }
             f = pcsf_gw(pi_lambda(lambda_m));
             if (cost_f(f) > (2. * C)) {
                 lambda_r = lambda_m;
             } else {
                 lambda_l = lambda_m;
+            }
+            num_iter++;
+            if (num_iter >= max_iter) {
+                cout << "warning! " << endl; // TODO Add a warning here.
             }
         } // binary search over the Lagrange parameter lambda
         Forest f_l = pcsf_gw(pi_lambda(lambda_l));
@@ -98,7 +103,7 @@ public:
     // the edge indices in the result forest.
     vector<int> result_edges;
 
-    ~HeadApprox(){}
+    ~HeadApprox() = default;
 
 
 private:
@@ -110,18 +115,22 @@ private:
     const int s;
     const double C;
     const double delta;
-    const int verbose_level;
-
-    // prizes could be changed, when call run(b) method.
+    const int max_iter;
+    const double err_tol;
+    const int root;
+    char *pruning;
+    const double epsilon;
+    const int verbose;
 
     // sum of prizes.
     double total_prizes;
-    // a tree is a pair, composed by lists of (first)nodes and (second)edges.
+
+    // a tree is a pair, composed by: (first)nodes and (second)edges.
     typedef pair<vector<int>, vector<int> > Tree;
     typedef pair<vector<int>, vector<int> > Forest;
 
     // get positive minimum prize in prizes vector.
-    double min_pi(){
+    double min_pi() {
         total_prizes = 0.0;
         double positive_min = std::numeric_limits<double>::max();
         for (auto const &val: prizes) {
@@ -131,22 +140,22 @@ private:
             }
         }
         /**
-         *Warning: There is a precision issue here. We may need to define a
-         * minimum precision. Since, in our experiment,  we found that some very
+         * Warning: There is a precision issue here. We may need to define a
+         * minimum precision. In our experiment,  we found that some very
          * small positive number could be like 1.54046e-310, 1.54046e-310.
          * In this case, the fast-pcst cannot stop!!!
          */
-        if (positive_min < 1e-8) {
-            if(verbose_level > 0){
+        if (positive_min < err_tol) {
+            if (verbose > 0) {
                 cout << "warning too small positive value found " << endl;
             }
-            positive_min = 1e-8;
+            positive_min = err_tol;
         }
         return positive_min;
     }
 
     // calculate pi(i) for each node i.
-    vector<double> pi_lambda(double lambda){
+    vector<double> pi_lambda(double lambda) {
         vector<double> pi_lambda(prizes.size());
         std::transform(prizes.begin(), prizes.end(), pi_lambda.begin(),
                        std::bind1st(std::multiplies<double>(), lambda));
@@ -154,7 +163,7 @@ private:
     }
 
     // calculate pi(F)
-    double pi_f(Forest f){
+    double pi_f(Forest f) {
         double pi_f = 0.0;
         for (auto &node:f.first) {
             pi_f += prizes[node];
@@ -163,7 +172,7 @@ private:
     }
 
     // calculate c(F)
-    double cost_f(Forest f){
+    double cost_f(Forest f) {
         double cost_f = 0.0;
         for (auto &edge_index:f.second) {
             cost_f += costs[edge_index];
@@ -172,9 +181,10 @@ private:
     }
 
     // run fast-pcst algorithm.
-    pair<vector<int>, vector<int> > pcsf_gw(vector<double> prizes){
-        PCSTFast algo(edges, prizes, costs, PCSTFast::kNoRoot, g,
-                      PCSTFast::kGWPruning, 0, nullptr);
+    pair<vector<int>, vector<int> > pcsf_gw(const vector<double> &prizes) {
+        PCSTFast algo(edges, prizes, costs, root, g,
+                      PCSTFast::parse_pruning_method(pruning),
+                      verbose, epsilon, nullptr);
         if (!algo.run(&result_nodes, &result_edges)) {
             cout << "Error: run pcst_fast error." << endl;
             exit(0);
@@ -184,7 +194,7 @@ private:
 
 
     // prune a forest.
-    pair<vector<int>, vector<int> > prune_forest(Forest f){
+    pair<vector<int>, vector<int> > prune_forest(Forest f) {
         // case 1: usually, there is only one tree.
         if (g == 1) {
             if (cost_f(f) <= C) {
@@ -192,7 +202,7 @@ private:
             } else if (0.0 < C) {
                 return prune_tree(f, C);
             } else {
-                return argmax_tree(f);
+                return arg_max_tree(f);
             }
         }
         // case 2: there are at least two trees.
@@ -211,7 +221,7 @@ private:
                 tree_i_prime = prune_tree(tree_i, c_r);
                 c_r = 0.0;
             } else {
-                tree_i_prime = argmax_tree(tree_i);// A single node tree.
+                tree_i_prime = arg_max_tree(tree_i);// A single node tree.
             }
             for (auto const &node:tree_i_prime.first) { // add tree_i_prime.
                 f.first.push_back(node);
@@ -223,8 +233,8 @@ private:
         return f;
     };
 
-    // argmax tree is to create a single node tree
-    Tree argmax_tree(Tree tree){
+    // create a single node tree
+    Tree arg_max_tree(Tree tree) {
         // create a single node tree.
         int maximum_node = tree.first[0];
         double maximum_pi = prizes[maximum_node];
@@ -239,7 +249,7 @@ private:
         return make_pair(single_tree, empty_edges);
     }
 
-    vector<HeadApprox::Tree> sort_forest(Forest f){
+    vector<HeadApprox::Tree> sort_forest(Forest f) {
         // Create a descending ordered forest.
         vector<int> nodes_map = get_nodes_map(f.first);
         // Create a adj graph. Node ID starts from 0.
@@ -255,7 +265,7 @@ private:
             adj[index_v].emplace_back(index_u);
         }
         int t = 0; // component id
-        vector<int> comp(adj.size(), 0); //label the nodes to the components id.
+        vector<int> comp(adj.size(), 0); //label nodes to the components id.
         vector<bool> visited(adj.size(), false);
         for (auto i = 0; i < adj.size(); i++) { // dfs algorithm to get cc
             if (!visited[i]) {
@@ -277,7 +287,7 @@ private:
                 t++; // to label component id.
             }
         }
-        int num_cc = t; //the total number of connected components in the forest.
+        int num_cc = t; //the total number of connected components in f.
         vector<HeadApprox::Tree> trees; // A collection of trees.
         vector<double> trees_pi((size_t) num_cc, 0.0); // prize of each tree
         vector<double> trees_cost((size_t) num_cc, 0.0); // cost of each tree
@@ -294,7 +304,7 @@ private:
             trees[tree_index].first.push_back(ori_node);
             trees_pi[tree_index] += prizes[ori_node];
         }
-        for (auto const &edge_index:f.second) { // try to insert edges into trees.
+        for (auto const &edge_index:f.second) { // insert edges into trees.
             int u = edges[edge_index].first; // random select one endpoint
             int index_u = nodes_map[u];
             trees[comp[index_u]].second.push_back(edge_index);
@@ -305,8 +315,8 @@ private:
             double weight;
             if (trees_cost[i] > 0.0) {
                 weight = trees_pi[i] / trees_cost[i];
-            } else {
-                weight = numeric_limits<double>::max(); // for a single node tree
+            } else { // for a single node tree
+                weight = numeric_limits<double>::max();
             }
             pair<double, int> wei = make_pair(weight, i);
             trees_wei.push_back(wei);
@@ -323,7 +333,7 @@ private:
 
 
     // prune a tree from original tree.
-    Tree prune_tree(Tree t, double c_prime){
+    Tree prune_tree(Tree t, double c_prime) {
         vector<int> nodes_t = t.first;
         vector<int> edges_t = t.second;
         pair<vector<int>, vector<int>> tour = dfs_tour(nodes_t, edges_t);
@@ -381,7 +391,8 @@ private:
         bool operator()(T const &a, T const &b) const { return a > b; }
     };
 
-    vector<int> get_nodes_map(vector<int> nodes){
+    // util function to map nodes to 0,1,n-1
+    vector<int> get_nodes_map(vector<int> nodes) {
         int max = *max_element(nodes.begin(), nodes.end());
         // nodes_map to find the index of one node.
         vector<int> nodes_map((size_t) (max + 1));
@@ -390,15 +401,17 @@ private:
         }
         return nodes_map;
     }
-/**
- * This method is to find a euler tour given a tree. This method is
- * proposed in the following paper:
- * Authors : Edmonds, Jack, and Ellis L. Johnson.
- * Title : Matching, Euler tours and the Chinese postman
- * Journal: Mathematical programming 5.1 (1973): 88-124.
- */
+
+    // deep first search for finding a tour.
     pair<vector<int>, vector<int> > dfs_tour(vector<int> nodes_t,
                                              vector<int> edges_t) {
+        /**
+         * This method is to find a euler tour given a tree. This method is
+         * proposed in the following paper:
+         *  Authors : Edmonds, Jack, and Ellis L. Johnson.
+         *  Title : Matching, Euler tours and the Chinese postman
+         *  Journal: Mathematical programming 5.1 (1973): 88-124.
+         */
         //Make sure the tree has at least two nodes.
         if (nodes_t.size() <= 1) {
             cout << "error: The input tree has at least two nodes.";
@@ -452,7 +465,8 @@ private:
                     int next_node = get<0>(adj[start_node][i]);
                     int edge_index = get<1>(adj[start_node][i]);
                     bool is_visited = get<2>(adj[start_node][i]);
-                    if (!is_visited) { // there exists a neighbor. has false node
+                    // there exists a neighbor. has false node
+                    if (!is_visited) {
                         get<2>(adj[start_node][i]) = true;
                         tour_nodes.push_back(next_node);
                         tour_edges.push_back(edge_index);
@@ -461,8 +475,9 @@ private:
                         break;
                     }
                 }
+                // all nodes are visited and there is no false nodes.
                 if (!flag_2) {
-                    break;// all nodes are visited and there is no false nodes.
+                    break;
                 }
             }
         }
@@ -471,8 +486,8 @@ private:
             int original_node = nodes_t[tour_node];
             tour_node = original_node;
         }
-        return make_pair(tour_nodes,
-                         tour_edges); //original nodes, edge indices
+        //original nodes, edge indices
+        return make_pair(tour_nodes, tour_edges);
     }
 
 };
@@ -481,22 +496,28 @@ class TailApprox {
 
 public:
 
-    //(edges_,prizes_,costs_) consist a graph
+
     TailApprox(const vector<pair<int, int> > &edges_,
                const vector<double> &costs_,
                const vector<double> &prizes_,
-               int g_, int s_, double C_, double nu_, double delta_):
+               int g_, int s_, double C_, double nu_,
+               int max_iter_, double err_tol_, int root_,
+               char *pruning_, double epsilon_, int verbose_) :
             edges(edges_), costs(costs_), prizes(prizes_),
-            g(g_), s(s_), C(C_), nu(nu_), delta(delta_), verbose_level(0) {
+            g(g_), s(s_), C(C_), nu(nu_),
+            max_iter(max_iter_), err_tol(err_tol_), root(root_),
+            pruning(pruning_), epsilon(epsilon_), verbose(verbose_) {
+        total_prizes = 0.0;
     }
 
     // given an input vector b, return a forest F
-    //prizes pi[i] = b_i * b_i, all other parameters
-    pair<vector<int>, vector<int> > run(){
+    // prizes pi[i] = b_i * b_i, all other parameters
+    pair<vector<int>, vector<int> > run() {
         //are settled in the initialization.
+        int num_iter = 0;
         double pi_min = min_pi();
         double lambda_0 = pi_min / (2.0 * C);
-        pcsf_gw(cost_lambda(lambda_0));
+        fast_pcsf(cost_lambda(lambda_0));
         double c_f = cost_F(result_edges);
         double pi_f_bar = pi_F_bar(result_nodes);
         if ((c_f <= (2.0 * C)) && (pi_f_bar <= 0.0)) {
@@ -504,12 +525,12 @@ public:
         }
         double lambda_r = 0.;
         double lambda_l = 3. * total_prizes;
-        double epsilon = (pi_min * delta) / C;
+        double epsilon = (pi_min * min(0.5, 1. / nu)) / C;
         double lambda_m;
         vector<double> c_l;
         while ((lambda_l - lambda_r) > epsilon) {
             lambda_m = (lambda_l + lambda_r) / 2.;
-            pcsf_gw(cost_lambda(lambda_m));
+            fast_pcsf(cost_lambda(lambda_m));
             c_f = cost_F(result_edges);
             if ((c_f >= (2. * C)) && (c_f <= (nu * C))) {
                 return make_pair(result_nodes, result_edges);
@@ -519,15 +540,17 @@ public:
             } else {
                 lambda_l = lambda_m;
             }
+            num_iter++;
+            if (num_iter >= max_iter) {
+                cout << "warning! " << endl; // TODO Add a warning here.
+            }
         } // while
-        pcsf_gw(cost_lambda(lambda_l));
+        fast_pcsf(cost_lambda(lambda_l));
         return make_pair(result_nodes, result_edges);
     };
 
-    // the nodes in the result forest.
-    vector<int> result_nodes;
-    // the edge indices in the result forest.
-    vector<int> result_edges;
+    vector<int> result_nodes; // result nodes in the result forest.
+    vector<int> result_edges; // result edge indices in the result forest.
 
 private:
     const vector<pair<int, int> > &edges;
@@ -537,15 +560,18 @@ private:
     const int s;
     const double C;
     const double nu;
-    const double delta;
-    const int verbose_level;
+    const int max_iter;
+    const double err_tol;
+    const int root;
+    char *pruning;
+    const double epsilon;
+    const int verbose;
 
     // sum of prizes.
     double total_prizes;
 
     // get positive minimum prize in prizes vector.
-    double min_pi(){
-        // return minimum positive value of prizes of nodes.
+    double min_pi() {
         total_prizes = 0.0;
         double positive_min = std::numeric_limits<double>::max();
         for (auto const &val: prizes) {
@@ -556,21 +582,18 @@ private:
         }
         /**
          *Warning: There is a precision issue here. We may need to define a
-         * minimum precision. Since, in our experiment,  we found that some very
+         * minimum precision. In our experiment,  we found that some very
          * small positive number could be like 1.54046e-310, 1.54046e-310.
          * In this case, the fast-pcst cannot stop!!!
          */
-        if (positive_min < 1e-8) {
-            if(verbose_level > 0){
-                cout << "warning too small positive value found " << endl;
-            }
-            positive_min = 1e-8;
+        if (positive_min < err_tol) {
+            positive_min = err_tol;
         }
         return positive_min;
     }
 
     // calculate c(e)*lambda_ for each edge.
-    vector<double> cost_lambda(double lambda_){
+    vector<double> cost_lambda(double lambda_) {
         vector<double> cost_lambda(costs.size());
         std::transform(costs.begin(), costs.end(), cost_lambda.begin(),
                        std::bind1st(std::multiplies<double>(), lambda_));
@@ -578,7 +601,7 @@ private:
     }
 
     // calculate c(F).
-    double cost_F(vector<int> result_edges){
+    double cost_F(vector<int> result_edges) {
         double cost_f = 0.0;
         for (auto const &val:result_edges) {
             cost_f += costs[val];
@@ -587,7 +610,7 @@ private:
     }
 
     // calculate pi(\bar{F})
-    double pi_F_bar(std::vector<int> result_nodes){
+    double pi_F_bar(std::vector<int> result_nodes) {
         double pi_f = 0.0;
         for (auto const &node:result_nodes) {
             pi_f += prizes[node];
@@ -595,10 +618,11 @@ private:
         return (total_prizes - pi_f);
     }
 
-    // run fast-pcst algorithm.
-    bool pcsf_gw(const vector<double> &costs){
+    // run fast-pcsf algorithm.
+    bool fast_pcsf(const vector<double> &costs) {
         PCSTFast algo(edges, prizes, costs, PCSTFast::kNoRoot,
-                      g, PCSTFast::kGWPruning, 0, nullptr);
+                      g, PCSTFast::parse_pruning_method(pruning),
+                      verbose, epsilon, nullptr);
         return algo.run(&result_nodes, &result_edges);
     }
 

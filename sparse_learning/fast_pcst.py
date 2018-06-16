@@ -9,7 +9,7 @@ except ImportError:
     exit(0)
 
 
-def fast_pcst(edges, prizes, weights, root, g, pruning, verbose_level):
+def fast_pcst(edges, prizes, weights, root, g, pruning, verbose, epsilon):
     """
     Fast PCST algorithm using C11 language
     :param edges:
@@ -18,7 +18,8 @@ def fast_pcst(edges, prizes, weights, root, g, pruning, verbose_level):
     :param weights:
     :param g:
     :param pruning:
-    :param verbose_level:
+    :param verbose:
+    :param epsilon: to control the precision
     :return:
     """
     if not np.any(prizes):  # make sure
@@ -27,7 +28,7 @@ def fast_pcst(edges, prizes, weights, root, g, pruning, verbose_level):
         print('all weights must be positive.')
     # TODO to check variables.
     re_nodes, re_edges = proj_pcst(edges, prizes, weights, root, g,
-                                   pruning, verbose_level)
+                                   pruning, verbose, epsilon)
     print(re_nodes)
     print(re_edges)
     return re_nodes, re_edges

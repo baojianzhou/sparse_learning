@@ -347,6 +347,7 @@ namespace cluster_approx {
                  int target_num_active_clusters_,
                  PruningMethod pruning_,
                  int verbosity_level_,
+                 double epsilon,
                  void (*output_function_)(const char*))
         : edges(edges_), prizes(prizes_), costs(costs_), root(root_),
         target_num_active_clusters(target_num_active_clusters_),
@@ -362,8 +363,7 @@ namespace cluster_approx {
             }
 
             current_time = 0.0;
-            // TODO: set to min input value / 2.0?
-            eps = 1e-6;
+            eps = epsilon;
 
             for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
                 if (prizes[ii] < 0.0) {
