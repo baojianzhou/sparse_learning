@@ -1,31 +1,10 @@
 #!/usr/bin/python
 import numpy as np
+from graph_utils.graph_base import simu_graph
 from sparse_learning.proj_algo import head_proj
 from sparse_learning.proj_algo import tail_proj
 from sparse_learning.fast_pcst import fast_pcst
 from sparse_learning.proj_algo import HeadTailWrapper
-
-
-def simu_graph(num_nodes):
-    edges_, weights_ = [], []
-    length = int(np.sqrt(num_nodes))
-    width_, index_ = length, 0
-    for i in range(length):
-        for j in range(width_):
-            if (index_ % length) != (length - 1):
-                edges_.append((index_, index_ + 1))
-                weights_.append(1.0)
-                if index_ + length < int(width_ * length):
-                    edges_.append((index_, index_ + length))
-                    weights_.append(1.0)
-            else:
-                if index_ + length < int(width_ * length):
-                    edges_.append((index_, index_ + length))
-                    weights_.append(1.0)
-            index_ += 1
-    edges = np.asarray(edges_, dtype=int)
-    weights = np.asarray(weights_, dtype=np.float64)
-    return edges, weights
 
 
 def test_all():
