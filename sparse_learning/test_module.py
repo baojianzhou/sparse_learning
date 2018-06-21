@@ -4,6 +4,8 @@ from sparse_learning.proj_algo import tail_proj
 from sparse_learning.fast_pcst import fast_pcst
 from sparse_learning.proj_algo import HeadTailWrapper
 
+__all__ = ['simu_graph', 'test_all']
+
 
 def simu_graph(num_nodes):
     edges_, weights_ = [], []

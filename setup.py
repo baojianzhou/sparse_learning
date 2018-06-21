@@ -30,7 +30,7 @@ setup(
     # sparse_learning package.
     name='sparse_learning',
     # current version is 0.1.2
-    version='0.1.2',
+    version='0.1.3',
     # this is a wrapper of head and tail projection.
     description='A wrapper for sparse learning algorithms.',
     # a long description should be here.
@@ -43,7 +43,7 @@ setup(
     author_email='bzhou6@albany.edu',
     include_dirs=[numpy.get_include()],
     license='MIT',
-    packages=['sparse_learning', 'cpp'],
+    packages=['sparse_learning', 'cpp', 'graph_utils'],
     classifiers=("Programming Language :: Python :: 2",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: POSIX :: Linux",),
