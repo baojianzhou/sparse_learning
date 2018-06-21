@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-__all__ = ['simu_graph', 'node_pre_rec_fm']
-
 import numpy as np
+
+__all__ = ['simu_graph', 'draw_graph', 'node_pre_rec_fm']
 
 
 def simu_graph(num_nodes):
@@ -24,6 +24,31 @@ def simu_graph(num_nodes):
     edges = np.asarray(edges, dtype=int)
     weights = np.asarray(weights, dtype=np.float64)
     return edges, weights
+
+
+def draw_graph(sub_graph, edges, length, width):
+    import networkx as nx
+    from pylab import rcParams
+    import matplotlib.pyplot as plt
+    from matplotlib.pyplot import subplots_adjust
+    subplots_adjust(top=1, bottom=0, right=1, left=0, hspace=0, wspace=0)
+    rcParams['figure.figsize'] = 14, 14
+
+    G = nx.Graph()
+    for edge in edges:
+        G.add_edge(edge[0], edge[1])
+    pos = dict()
+    index = 0
+    for i in range(length):
+        for j in range(width):
+            G.add_node(index)
+            pos[index] = (j, length - i)
+            index += 1
+    nx.draw_networkx_nodes(G, pos, node_size=100, nodelist=range(33 * 33), node_color='gray')
+    nx.draw_networkx_nodes(G, pos, node_size=100, nodelist=sub_graph, node_color='b')
+    nx.draw_networkx_edges(G, pos, alpha=0.5, width=2)
+    plt.axis('off')
+    plt.show()
 
 
 def node_pre_rec_fm(true_feature, pred_feature):
