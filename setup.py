@@ -43,7 +43,7 @@ setup(
     author_email='bzhou6@albany.edu',
     include_dirs=[numpy.get_include()],
     license='MIT',
-    packages=['sparse_learning', 'cpp', 'graph_utils'],
+    packages=['sparse_learning'],
     classifiers=("Programming Language :: Python :: 2",
                  "License :: OSI Approved :: MIT License",
                  "Operating System :: POSIX :: Linux",),
