@@ -835,7 +835,7 @@ namespace cluster_approx {
             node_good.resize(prizes.size(), false);
 
             if (root >= 0) {
-                // find the root cluster
+                // uf_find the root cluster
                 for (size_t ii = 0; ii < clusters.size(); ++ii) {
                     if (clusters[ii].contains_root && clusters[ii].merged_into == -1) {
                         mark_nodes_as_good(ii);

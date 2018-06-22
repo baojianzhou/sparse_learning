@@ -9,6 +9,7 @@
 #include <numpy/arrayobject.h>
 #include "pcst_fast.h"
 #include "head_tail.h"
+#include "union_find.h"
 
 using std::cerr;
 using cluster_approx::PCSTFast;
@@ -169,7 +170,6 @@ static PyObject *proj_tail(PyObject *self, PyObject *args) {
     return results;
 }
 
-
 static PyObject *proj_pcst(PyObject *self, PyObject *args) {
     /**
      * DO NOT call this function directly, use the Python Wrapper instead.
@@ -237,13 +237,55 @@ static PyObject *proj_pcst(PyObject *self, PyObject *args) {
     return results;
 }
 
+static PyObject *mst(PyObject *self, PyObject *args) {
+    /**
+     * minimal spanning tree
+     * DO NOT call this function directly, use the Python Wrapper instead.
+     * list of args:
+     * args[0]: ndarray dim=(m,2) -- edges of the graph.
+     * args[1]: ndarray dim=(m,)  -- weights of the graph.
+     * args[3]: integer np.int32  -- number of nodes in the graph.
+     * @return: (the edge indices of the spanning tree)
+     * re_nodes: result nodes
+     * re_edges: result edges
+     */
+    if (self != nullptr) {
+        cerr << "unknown error for no reason." << endl;
+        return nullptr;
+    }
+    PyArrayObject *edges_, *edge_weights_;
+    int num_nodes;
+    if (!PyArg_ParseTuple(args, "O!O!i", &PyArray_Type, &edges_,
+                          &PyArray_Type, &edge_weights_,
+                          &num_nodes)) { return nullptr; }
+    long m = edges_->dimensions[0];     // number of edges
+    vector<pair<int, int> > edges;
+    vector<double> weights;
+    for (size_t i = 0; i < m; i++) {
+        auto *u = (int *) PyArray_GETPTR2(edges_, i, 0);
+        auto *v = (int *) PyArray_GETPTR2(edges_, i, 1);
+        pair<int, int> edge = std::make_pair(*u, *v);
+        edges.push_back(edge);
+        auto *wei = (double *) PyArray_GETPTR1(edge_weights_, i);
+        weights.push_back(*wei);
+    }
+    vector<size_t> selected_edges;
+    selected_edges = kruskal_mst(edges, weights, (size_t) (num_nodes));
+    PyObject *results = PyList_New(selected_edges.size());
+    for (size_t i = 0; i < selected_edges.size(); i++) {
+        PyList_SetItem(results, i, PyInt_FromLong(selected_edges[i]));
+    }
+    return results;
+}
+
 
 /**
- * Here we defined 3 functions.
+ * Here we defined 4 functions.
  *
  * 1. proj_head
  * 2. proj_tail
  * 3. proj_pcst
+ * 4. minimal_spanning_tree
  *
  * above 3 functions had been tested on Python2.7.
  *
@@ -257,6 +299,7 @@ static PyMethodDef proj_methods[] = {
         {"proj_head", (PyCFunction) proj_head, METH_VARARGS, "Head docs"},
         {"proj_tail", (PyCFunction) proj_tail, METH_VARARGS, "Tail docs"},
         {"proj_pcst", (PyCFunction) proj_pcst, METH_VARARGS, "PCST docs"},
+        {"mst",       (PyCFunction) mst, METH_VARARGS, "mst docs"},
         {nullptr,     nullptr, 0,                            nullptr}};
 
 

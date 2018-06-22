@@ -397,7 +397,7 @@ private:
     // util function to map nodes to 0,1,n-1
     vector<int> get_nodes_map(vector<int> nodes) {
         int max = *max_element(nodes.begin(), nodes.end());
-        // nodes_map to find the index of one node.
+        // nodes_map to uf_find the index of one node.
         vector<int> nodes_map((size_t) (max + 1));
         for (int index = 0; index < nodes.size(); index++) {
             nodes_map[nodes[index]] = index;
