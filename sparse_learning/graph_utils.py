@@ -1,30 +1,41 @@
 # -*- coding: utf-8 -*-
+import random
 import numpy as np
 
-__all__ = ['simu_graph', 'draw_graph', 'node_pre_rec_fm', 'minimal_spanning_tree']
+__all__ = ['simu_graph', 'draw_graph', 'node_pre_rec_fm',
+           'minimal_spanning_tree', 'random_walk']
 
 
-def simu_graph(num_nodes, rand=False):
+def simu_graph(num_nodes, rand=False, graph_type='grid'):
     """
     To generate a grid graph. Each node has 4-neighbors.
     :param num_nodes: number of nodes in the graph.
     :param rand: if rand True, then generate random weights in (0., 1.)
+    :param graph_type: ['grid', 'chain']
     :return: edges and corresponding to unite weights.
     """
     edges, weights = [], []
-    length = int(np.sqrt(num_nodes))
-    width, index = length, 0
-    for i in range(length):
-        for j in range(width):
-            if (index % length) != (length - 1):
-                edges.append((index, index + 1))
-                if index + length < int(width * length):
-                    edges.append((index, index + length))
-            else:
-                if index + length < int(width * length):
-                    edges.append((index, index + length))
-            index += 1
-    edges = np.asarray(edges, dtype=int)
+    if graph_type == 'grid':
+        length = int(np.sqrt(num_nodes))
+        width, index = length, 0
+        for i in range(length):
+            for j in range(width):
+                if (index % length) != (length - 1):
+                    edges.append((index, index + 1))
+                    if index + length < int(width * length):
+                        edges.append((index, index + length))
+                else:
+                    if index + length < int(width * length):
+                        edges.append((index, index + length))
+                index += 1
+        edges = np.asarray(edges, dtype=int)
+    elif graph_type == 'chain':
+        for i in range(num_nodes - 1):
+            edges.append((i, i + 1))
+    else:
+        edges = []
+
+    # generate weights of the graph
     if rand:
         weights = []
         while len(weights) < len(edges):
@@ -35,6 +46,47 @@ def simu_graph(num_nodes, rand=False):
     else:
         weights = np.ones(len(edges), dtype=np.float64)
     return edges, weights
+
+
+def random_walk(k, edges, restart=-1.0, start_node=None):
+    """
+    random walk method to generate a subgraph.
+    :param k: the number of nodes in true subgraph
+    :param edges: the list of edges.
+    :param start_node:
+    :param restart: with a fix probability to restart.
+    :return: a true subgraph. a list of edges.
+    """
+    adj = dict()
+    for edge in edges:
+        if edge[0] not in adj:
+            adj[edge[0]] = set()
+        adj[edge[0]].add(edge[1])
+        if edge[1] not in adj:
+            adj[edge[1]] = set()
+        adj[edge[1]].add(edge[0])
+    subgraph_nodes = set()
+    subgraph_edges = set()
+    if start_node is None:  # random select an initial node.
+        start_node = list(adj.keys())[random.randrange(0, len(adj))]
+    next_node = start_node
+    subgraph_nodes.add(start_node)
+    if k == 1:
+        return subgraph_nodes, subgraph_edges
+    while True:
+        next_neighbor = list(adj[next_node])
+        rand_nei = next_neighbor[random.randrange(0, len(next_neighbor))]
+        subgraph_nodes.add(rand_nei)
+        edge_1, edge_2 = (next_node, rand_nei), (rand_nei, next_node)
+        if edge_1 not in subgraph_edges and edge_2 not in subgraph_edges:
+            subgraph_edges.add(edge_1)
+            subgraph_edges.add(edge_2)
+        next_node = rand_nei  # go to next node
+        if len(subgraph_nodes) >= k:  # get a connected k-subgraph
+            break
+        if random.random() < restart:
+            next_node = start_node
+    return subgraph_nodes, subgraph_edges
 
 
 def draw_graph(sub_graph, edges, length, width):
