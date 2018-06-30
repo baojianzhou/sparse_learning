@@ -6,6 +6,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fpermissive -std=c++11 -lpython2.
 find_package(PythonLibs 2.7 REQUIRED)
 message(${PYTHON_INCLUDE_DIRS})
 include_directories(${PYTHON_INCLUDE_DIRS})
+
+
 add_executable(test_fast_pcst test_fast_pcst.cpp pcst_fast.h)
 add_executable(test_head_tail test_head_tail.cpp head_tail.h)
 add_executable(test_main_wrapper main_wrapper.cpp head_tail.h)
@@ -14,3 +16,5 @@ add_executable(test_loss_func test_loss_func.c loss_func.c loss_func.h)
 
 add_library(proj_algo SHARED head_tail.h pcst_fast.h main_wrapper.cpp)
 target_link_libraries(proj_algo python2.7)
+target_link_libraries(test_loss_func -lm )
+set_target_properties(test_loss_func PROPERTIES COMPILE_FLAGS "-std=c11 -I /usr/include/x86_64-linux-gnu/ -L /usr/lib/x86_64-linux-gnu/openblas/ -lopenblas -lpthread -lgfortran -lm")

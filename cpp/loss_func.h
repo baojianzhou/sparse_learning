@@ -5,6 +5,9 @@
 #ifndef SPARSE_PROJ_LOSS_FUNC_H
 #define SPARSE_PROJ_LOSS_FUNC_H
 
+
+void loss_logistic_sigmoid(const double *x, double *out, int x_len);
+
 double loss_logistic_primal_loss(const double w_xi,
                                  const double yi,
                                  const double weight);
@@ -21,7 +24,7 @@ double *loss_logistic_intercept_dot(const double *w,
                                     int y_len);
 
 /**
- * Scikit-learn api
+ * Scikit-learn api tested
  * Computes the logistic loss and gradient.
  * Parameters
  * ----------
@@ -36,14 +39,14 @@ double *loss_logistic_intercept_dot(const double *w,
  * @param n_features: number of features
  * @return (loss, grad) (1,(n_features,)) or (1,(n_features + 1,)) loss, grad
  */
-double *loss_logistic_loss_and_grad(const double *w,
-                                    const double *x,
-                                    const double *y,
-                                    double alpha,
-                                    const double *weight,
-                                    int w_len,
-                                    int n_samples,
-                                    int n_features);
+double *loss_logistic_loss_grad(const double *w,
+                                const double *x,
+                                const double *y,
+                                double alpha,
+                                const double *weight,
+                                int w_len,
+                                int n_samples,
+                                int n_features);
 
 /**
  * Scikit-learn api
