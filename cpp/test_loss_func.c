@@ -1,11 +1,8 @@
 //
 // Created by baojian on 6/29/18.
 // command: gcc -o test_loss_func test_loss_func.c loss_func.c loss_func.h -lm
-// -I /usr/include/x86_64-linux-gnu/
-// -L /usr/lib/x86_64-linux-gnu/openblas/
+// -I /usr/include/x86_64-linux-gnu/ -L /usr/lib/x86_64-linux-gnu/openblas/
 // -lopenblas -lpthread -lgfortran
-//
-
 #include <math.h>
 #include <cblas.h>
 #include <stdio.h>
@@ -107,9 +104,6 @@ void main() {
     double w[6] = {0., 0., 0., 0., -0.0};
     double x[10] = {1., 2., 3., 4., -2, 1., 2., 3., 4., -.3};
     double y[2] = {1., -1.};
-    double *loss_grad = loss_logistic_loss_grad(w, x, y, 0.5, NULL, p + 1, n,
-                                                p);
-    for (int i = 0; i < 6; i++) {
-        printf("%lf\n", loss_grad[i]);
-    }
+    double loss = loss_logistic_loss(w, x, y, 0.5, NULL, p + 1, n, p);
+    printf("%lf\n", loss);
 }

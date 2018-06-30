@@ -16,12 +16,6 @@ double loss_logistic_primal_derivative(const double w_xi,
                                        const double yi,
                                        const double weight);
 
-double *loss_logistic_intercept_dot(const double *w,
-                                    const double *x,
-                                    const double *y,
-                                    int w_len,
-                                    int x_len,
-                                    int y_len);
 
 /**
  * Scikit-learn api tested
@@ -64,13 +58,22 @@ double *loss_logistic_loss_grad(const double *w,
  * @param n_features: number of features
  * @return (loss) float Logistic loss.
  */
-double *loss_logistic_loss(const double *w,
-                           const double *x,
-                           const double *y,
-                           double alpha,
-                           const double *weight,
-                           int w_len,
-                           int n_samples,
-                           int n_features);
+double loss_logistic_loss(const double *w,
+                          const double *x,
+                          const double *y,
+                          double alpha,
+                          const double *weight,
+                          int w_len,
+                          int n_samples,
+                          int n_features);
+
+double *loss_logistic_grad_hess(const double *w,
+                                const double *x,
+                                const double *y,
+                                double alpha,
+                                const double *weight,
+                                int w_len,
+                                int n_samples,
+                                int n_features);
 
 #endif //SPARSE_PROJ_LOSS_FUNC_H

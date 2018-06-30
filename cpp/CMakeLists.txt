@@ -16,5 +16,4 @@ add_executable(test_loss_func test_loss_func.c loss_func.c loss_func.h)
 
 add_library(proj_algo SHARED head_tail.h pcst_fast.h main_wrapper.cpp)
 target_link_libraries(proj_algo python2.7)
-target_link_libraries(test_loss_func -lm )
-set_target_properties(test_loss_func PROPERTIES COMPILE_FLAGS "-std=c11 -I /usr/include/x86_64-linux-gnu/ -L /usr/lib/x86_64-linux-gnu/openblas/ -lopenblas -lpthread -lgfortran -lm")
+target_link_libraries(test_loss_func -lm)

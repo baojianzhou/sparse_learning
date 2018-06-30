@@ -137,6 +137,8 @@ def test():
 
 
 from sklearn.linear_model.logistic import _logistic_loss_and_grad
+from sklearn.linear_model.logistic import _logistic_loss
+from sklearn.linear_model.logistic import _logistic_grad_hess
 import time
 
 out, grad = _logistic_loss_and_grad(w=np.asarray([1., 2., 3.]),
@@ -176,3 +178,11 @@ out, grad = _logistic_loss_and_grad(w=np.asarray([0., 0., 0., 0., -0.]),
                                     alpha=0.5, sample_weight=None)
 print(out)
 print(grad)
+
+print('-' * 50)
+out = _logistic_loss(w=np.asarray([0., 0., 0., 0., -0.]),
+                     X=np.asarray([[1., 2., 3., 4., -2], [1., 2., 3., 4., -.3]]),
+                     y=np.asarray([1, -1]),
+                     alpha=0.5, sample_weight=None)
+print(out)
+
