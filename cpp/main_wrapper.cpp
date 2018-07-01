@@ -244,7 +244,7 @@ static PyObject *mst(PyObject *self, PyObject *args) {
      * list of args:
      * args[0]: ndarray dim=(m,2) -- edges of the graph.
      * args[1]: ndarray dim=(m,)  -- weights of the graph.
-     * args[3]: integer np.int32  -- number of nodes in the graph.
+     * args[2]: integer np.int32  -- number of nodes in the graph.
      * @return: (the edge indices of the spanning tree)
      * re_nodes: result nodes
      * re_edges: result edges
@@ -278,6 +278,52 @@ static PyObject *mst(PyObject *self, PyObject *args) {
     return results;
 }
 
+static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
+    /**
+     * Gradient Hard Thresholding
+     * DO NOT call this function directly, use the Python Wrapper instead.
+     * list of args:
+     * args[0]: ndarray dim=(n,p) -- training data
+     * args[1]: ndarray dim=(n,)  -- labels
+     * args[4]: integer np.int32  -- k. sparsity
+     * args[5]: double np.float64 -- eta learning rate.
+     * args[6]: double np.float64 -- tol tolerance of error
+     * args[6]: int   np.int32 -- maximal iterations.
+     * @return: (wt,losses)
+     */
+    if (self != nullptr) {
+        cerr << "unknown error for no reason." << endl;
+        return nullptr;
+    }
+    PyArrayObject *x_, *y_;
+    int n, p, k, max_iter;
+    double eta, tol;
+    if (!PyArg_ParseTuple(args, "O!O!iddi", &PyArray_Type, &x_, &PyArray_Type,
+                          &y_, &k, &eta, &tol, &max_iter)) { return nullptr; }
+    n = (int) (x_->dimensions[0]);     // number of samples
+    p = (int) (x_->dimensions[1]);     // number of features
+    auto *x = (double *) malloc(n * p * sizeof(double));
+    auto *y = (double *) malloc(n * sizeof(double));
+    auto *wt = (double *) malloc(p * sizeof(double));
+    for (size_t i = 0; i < n; i++) {
+        for (size_t j = 0; j < p; j++) {
+            auto *val = (double *) PyArray_GETPTR2(x_, i, j);
+            x[i * p + j] = *val;
+        }
+        auto *val = (double *) PyArray_GETPTR1(y_, i);
+        y[i] = *val;
+    }
+    PyObject *results = PyTuple_New(2);
+    PyObject *re_wt = PyList_New(p);
+    PyObject *re_losses = PyList_New(max_iter);
+    PyTuple_SetItem(results, 0, re_wt);
+    PyTuple_SetItem(results, 1, re_losses);
+    free(wt);
+    free(y);
+    free(x);
+    return results;
+}
+
 
 /**
  * Here we defined 4 functions.
@@ -296,11 +342,13 @@ static PyObject *mst(PyObject *self, PyObject *args) {
  * 4. some docs.
  */
 static PyMethodDef proj_methods[] = {
-        {"proj_head", (PyCFunction) proj_head, METH_VARARGS, "Head docs"},
-        {"proj_tail", (PyCFunction) proj_tail, METH_VARARGS, "Tail docs"},
-        {"proj_pcst", (PyCFunction) proj_pcst, METH_VARARGS, "PCST docs"},
-        {"mst",       (PyCFunction) mst, METH_VARARGS, "mst docs"},
-        {nullptr,     nullptr, 0,                            nullptr}};
+        {"proj_head", (PyCFunction) proj_head,     METH_VARARGS, "Head docs"},
+        {"proj_tail", (PyCFunction) proj_tail,     METH_VARARGS, "Tail docs"},
+        {"proj_pcst", (PyCFunction) proj_pcst,     METH_VARARGS, "PCST docs"},
+        {"mst",       (PyCFunction) mst,           METH_VARARGS, "mst docs"},
+        {"ghtp_logistic",
+                      (PyCFunction) ghtp_logistic, METH_VARARGS, "mst docs"},
+        {nullptr,     nullptr, 0,                                nullptr}};
 
 
 #if PY_MAJOR_VERSION >= 3

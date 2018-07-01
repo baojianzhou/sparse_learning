@@ -5,28 +5,26 @@
 #ifndef SPARSE_PROJ_LOSS_FUNC_H
 #define SPARSE_PROJ_LOSS_FUNC_H
 
-
-void loss_logistic_sigmoid(const double *x, double *out, int x_len);
-
-double loss_logistic_primal_loss(const double w_xi,
-                                 const double yi,
-                                 const double weight);
-
-double loss_logistic_primal_derivative(const double w_xi,
-                                       const double yi,
-                                       const double weight);
+/**
+ * Compute the log of the logistic function, ``log(1 / (1 + e ** -x))``
+ * @param x (n_samples, n_features) dimension.
+ * @param out log(1 / (1 + e ** -x[i]))
+ * @param x_len
+ */
+void loss_logistic_sigmoid(const double *x,
+                           double *out,
+                           int x_len);
 
 
 /**
- * Scikit-learn api tested
  * Computes the logistic loss and gradient.
  * Parameters
  * ----------
- * w:       ndarray, (n_features,) or (n_features + 1,) Coefficient vector.
- * x:       ndarray, (n_samples, n_features)            Training data.
- * y:       ndarray, (n_samples,)                       Array of labels.
- * alpha:   float Regularization parameter.             equal to 1 / C.
- * sample_weight: (n_samples,) optional
+ * @param w: (n_features,) or (n_features + 1,) Coefficient vector.
+ * @param x: (n_samples, n_features)  Training data. (CblasRowMajor)
+ * @param y: (n_samples,)           Array of labels.
+ * @param alpha:   float Regularization parameter. equal to 1 / C.
+ * @param weight: (n_samples,) optional
  *          Array of weights that are assigned to individual samples.
  *          If not provided, then each sample is given unit weight.
  * @param n_samples: number of samples
@@ -43,15 +41,14 @@ double *loss_logistic_loss_grad(const double *w,
                                 int n_features);
 
 /**
- * Scikit-learn api
  * Computes the logistic loss and gradient.
  * Parameters
  * ----------
- * w:       ndarray, (n_features,) or (n_features + 1,) Coefficient vector.
- * x:       ndarray, (n_samples, n_features)            Training data.
- * y:       ndarray, (n_samples,)                       Array of labels.
- * alpha:   float Regularization parameter.             equal to 1 / C.
- * sample_weight: (n_samples,) optional
+ * @param w: (n_features,) or (n_features + 1,) Coefficient vector.
+ * @param x: (n_samples, n_features)            Training data.
+ * @param y: (n_samples,)                       Array of labels.
+ * @param alpha: float Regularization parameter.             equal to 1 / C.
+ * @param weight: (n_samples,) optional
  *          Array of weights that are assigned to individual samples.
  *          If not provided, then each sample is given unit weight.
  * @param n_samples: number of samples
