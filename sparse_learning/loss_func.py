@@ -141,10 +141,13 @@ from sklearn.linear_model.logistic import _logistic_loss
 from sklearn.linear_model.logistic import _logistic_grad_hess
 import time
 
-out, grad = _logistic_loss_and_grad(w=np.asarray([1., 2., 3.]),
-                                    X=np.asarray([[1., 2., 3.], [1., 2., 3.], [1., 2., 3.]]),
-                                    y=np.asarray([1, -1, 1]),
+start_time = time.time()
+out, grad = _logistic_loss_and_grad(w=np.random.normal(0.0, 1.0, 10000),
+                                    X=np.random.normal(0.0, 1.0, 10000 * 10000).reshape(10000, 10000),
+                                    y=np.asarray([1, -1] * 5000),
                                     alpha=0.5, sample_weight=None)
+
+print('run time: ', time.time() - start_time)
 print(out)
 print(grad)
 print('-' * 50)
@@ -185,4 +188,3 @@ out = _logistic_loss(w=np.asarray([0., 0., 0., 0., -0.]),
                      y=np.asarray([1, -1]),
                      alpha=0.5, sample_weight=None)
 print(out)
-
