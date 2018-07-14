@@ -29,8 +29,8 @@ def get_c_sources(folder, include_headers=False):
 setup(
     # sparse_learning package.
     name='sparse_learning',
-    # current version is 0.1.2
-    version='0.2.0',
+    # current version is 0.2.1
+    version='0.2.1',
     # this is a wrapper of head and tail projection.
     description='A wrapper for sparse learning algorithms.',
     # a long description should be here.

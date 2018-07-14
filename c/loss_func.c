@@ -107,7 +107,7 @@ double loss_logistic_loss(const double *w,
     double c = 0.0, loss;
     double *unit_weight = (double *) malloc(n * sizeof(double));
     double *yz = (double *) malloc(n * sizeof(double));
-    double *logist = (double *) malloc(n * sizeof(double));
+    double *logit = (double *) malloc(n * sizeof(double));
     /** set intercept c */
     if ((p + 1) == w_len) {
         c = w[w_len - 1];
@@ -129,10 +129,10 @@ double loss_logistic_loss(const double *w,
     cblas_dgemv(101, 111, n, p, 1., x, p, w, 1, 1., yz, 1);
     self_ddot(y, yz, n);
     /** calculate loss */
-    loss_logistic_sigmoid(yz, logist, n);
+    loss_logistic_sigmoid(yz, logit, n);
     loss = 0.5 * alpha * cblas_ddot(p, w, 1, w, 1); // regularization
-    loss -= cblas_ddot(n, unit_weight, 1, logist, 1); // data fitting
-    free(logist);
+    loss -= cblas_ddot(n, unit_weight, 1, logit, 1); // data fitting
+    free(logit);
     free(yz);
     free(unit_weight);
     return loss;

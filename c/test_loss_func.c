@@ -117,6 +117,12 @@ void test_logistic_loss_grad() {
     free(w);
 }
 
+/**
+ * gcc -o build/test_loss_func test_loss_func.c loss_func.c loss_func.h
+ * -I /network/rit/lab/ceashpc/bz383376/opt/openblas-0.3.1/include/
+ * -L /network/rit/lab/ceashpc/bz383376/opt/openblas-0.3.1/lib/
+ * -lm -lopenblas
+ */
 void main() {
     test_logistic_sigmoid();
     test_logistic_loss();
