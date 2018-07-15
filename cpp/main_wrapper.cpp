@@ -332,6 +332,11 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
     }
     printf("lr:%lf, sparsity:%d, tol:%lf, maximal_iter:%d, eta:%lf\n",
            lr, sparsity, tol, max_iter, eta);
+
+    //////////////// gradient hard thresholding pursuit /////////////////////
+
+    /////////////////////////////////////////////////////////////////////////
+
     PyObject *results = PyTuple_New(3);
     PyObject *re_wt = PyList_New(p);
     PyObject *re_intercept = PyList_New(1);

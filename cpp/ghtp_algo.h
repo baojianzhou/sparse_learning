@@ -7,10 +7,9 @@
 
 #include <cmath>
 #include <cstdio>
-#include <cblas.h>
 #include <cstdlib>
 #include <cstring>
-
+#include <cblas.h>
 
 extern inline double *self_ddot(const double *x, double *out, int len_x) {
     for (int i = 0; i < len_x; i++) {
@@ -50,11 +49,11 @@ double *loss_logistic_loss_grad(const double *w,
                                 int n_features) {
     int i, n = n_samples, p = n_features;
     double c = 0.0, sum_z0 = 0.0;
-    double *loss_grad = (double *) malloc((w_len + 1) * sizeof(double));
-    double *unit_weight = (double *) malloc(n * sizeof(double));
-    double *yz = (double *) malloc(n * sizeof(double));
-    double *z0 = (double *) malloc(n * sizeof(double));
-    double *logistic = (double *) malloc(n * sizeof(double));
+    auto *loss_grad = (double *) malloc((w_len + 1) * sizeof(double));
+    auto *unit_weight = (double *) malloc(n * sizeof(double));
+    auto *yz = (double *) malloc(n * sizeof(double));
+    auto *z0 = (double *) malloc(n * sizeof(double));
+    auto *logistic = (double *) malloc(n * sizeof(double));
     /** set intercept c */
     if ((p + 1) == w_len) {
         c = w[w_len - 1];
@@ -73,7 +72,7 @@ double *loss_logistic_loss_grad(const double *w,
     for (i = 0; i < n; i++) {
         yz[i] = c;
     }
-    cblas_dgemv(101, 111, n, p, 1., x, p, w, 1, 1., yz, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, n, p, 1., x, p, w, 1, 1., yz, 1);
     self_ddot(y, yz, n);
     /** calculate z0*/
     expit(yz, z0, n);
@@ -87,7 +86,8 @@ double *loss_logistic_loss_grad(const double *w,
     loss_grad[0] -= cblas_ddot(n, unit_weight, 1, logistic, 1); // data fitting
     /** calculate gradient*/
     memcpy(loss_grad + 1, w, sizeof(double) * p);
-    cblas_dgemv(101, 112, n, p, 1., x, p, z0, 1, alpha, loss_grad + 1, 1);
+    cblas_dgemv(CblasRowMajor, CblasTrans, n, p, 1., x, p, z0, 1,
+                alpha, loss_grad + 1, 1);
     if ((p + 1) == w_len) {
         loss_grad[w_len] = sum_z0; // intercept part
     }
@@ -108,15 +108,13 @@ double loss_logistic_loss(const double *w,
                           int n_features) {
     int i, n = n_samples, p = n_features;
     double c = 0.0, loss;
-    double *unit_weight = (double *) malloc(n * sizeof(double));
-    double *yz = (double *) malloc(n * sizeof(double));
-    double *logit = (double *) malloc(n * sizeof(double));
-    /** set intercept c */
-    if ((p + 1) == w_len) {
+    auto *unit_weight = (double *) malloc(n * sizeof(double));
+    auto *yz = (double *) malloc(n * sizeof(double));
+    auto *logit = (double *) malloc(n * sizeof(double));
+    if ((p + 1) == w_len) { /** set intercept c */
         c = w[w_len - 1];
     }
-    /** set weight */
-    if (weight == NULL) {
+    if (weight == NULL) { /** set weight */
         for (i = 0; i < n; i++) {
             unit_weight[i] = 1.;
         }
@@ -125,11 +123,10 @@ double loss_logistic_loss(const double *w,
             unit_weight[i] = weight[i];
         }
     }
-    /** calculate yz */
-    for (i = 0; i < n; i++) {
+    for (i = 0; i < n; i++) {/** calculate yz */
         yz[i] = c;
     }
-    cblas_dgemv(101, 111, n, p, 1., x, p, w, 1, 1., yz, 1);
+    cblas_dgemv(CblasRowMajor, CblasNoTrans, n, p, 1., x, p, w, 1, 1., yz, 1);
     self_ddot(y, yz, n);
     /** calculate loss */
     loss_logistic_sigmoid(yz, logit, n);
