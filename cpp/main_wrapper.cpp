@@ -10,6 +10,7 @@
 #include "pcst_fast.h"
 #include "head_tail.h"
 #include "union_find.h"
+#include "ghtp_algo.h"
 
 using std::cerr;
 using cluster_approx::PCSTFast;
@@ -279,7 +280,6 @@ static PyObject *mst(PyObject *self, PyObject *args) {
 }
 
 static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
-    //x_tr, y_tr, w0, lr, sparsity, tol, maximal_iter, eta
     /**
      * Gradient Hard Thresholding
      * DO NOT call this function directly, use the Python Wrapper instead.
