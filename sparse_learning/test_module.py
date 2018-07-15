@@ -131,6 +131,10 @@ def test_mst_performance():
     print(len(set(re_nodes1).intersection(re_nodes2)))
 
 
+def test_graph_ghtp():
+    pass
+
+
 def main():
     test_proj_algo()
     test_fast_pcst()

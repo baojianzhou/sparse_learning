@@ -56,7 +56,6 @@ setup(
                            sources=['cpp/main_wrapper.cpp'],
                            language="c++",
                            extra_compile_args=['-std=c++11', '-lpython2.7'],
-                           include_dirs=[numpy.get_include(),
-                                         '/usr/include/', 'cpp/include/'],
+                           include_dirs=[numpy.get_include(), '/usr/include/', 'cpp/'],
                            )],
     keywords='sparse learning, structure sparsity, head/tail projection')

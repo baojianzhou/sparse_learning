@@ -279,45 +279,123 @@ static PyObject *mst(PyObject *self, PyObject *args) {
 }
 
 static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
+    //x_tr, y_tr, w0, lr, sparsity, tol, maximal_iter, eta
     /**
      * Gradient Hard Thresholding
      * DO NOT call this function directly, use the Python Wrapper instead.
      * list of args:
-     * args[0]: ndarray dim=(n,p) -- training data
-     * args[1]: ndarray dim=(n,)  -- labels
-     * args[4]: integer np.int32  -- k. sparsity
-     * args[5]: double np.float64 -- eta learning rate.
-     * args[6]: double np.float64 -- tol tolerance of error
-     * args[6]: int   np.int32 -- maximal iterations.
+     * args[0]: ndarray dim=(n,p) -- training data, x_tr
+     * args[1]: ndarray dim=(n,)  -- labels, y_tr {+1,-1}
+     * args[2]: ndarray dim=(p+1,)-- initial point (including intercept)
+     * args[3]: ndarray np.float64-- learning rate
+     * args[4]: integer np.int32  -- sparsity parameter
+     * args[5]: double  np.float64-- tol tolerance for stop condition
+     * args[6]: integer np.int32  -- maximal_iter maximal iterations.
+     * args[7]: double  np.int32  -- regularization parameter
      * @return: (wt,losses)
      */
     if (self != nullptr) {
         cerr << "unknown error for no reason." << endl;
         return nullptr;
     }
-    PyArrayObject *x_, *y_;
-    int n, p, k, max_iter;
-    double eta, tol;
-    if (!PyArg_ParseTuple(args, "O!O!iddi", &PyArray_Type, &x_, &PyArray_Type,
-                          &y_, &k, &eta, &tol, &max_iter)) { return nullptr; }
-    n = (int) (x_->dimensions[0]);     // number of samples
-    p = (int) (x_->dimensions[1]);     // number of features
+    PyArrayObject *x_tr_, *y_tr_, *w0_;
+    int n, p, k, max_iter, i, j;
+    double eta, tol, lr;
+    if (!PyArg_ParseTuple(args, "O!O!O!didid",
+                          &PyArray_Type, &x_tr_,
+                          &PyArray_Type, &y_tr_,
+                          &PyArray_Type, &w0_,
+                          &lr, &k, &tol, &max_iter, &eta)) { return nullptr; }
+    n = (int) (x_tr_->dimensions[0]);     // number of samples
+    p = (int) (x_tr_->dimensions[1]);     // number of features
     auto *x = (double *) malloc(n * p * sizeof(double));
     auto *y = (double *) malloc(n * sizeof(double));
     auto *wt = (double *) malloc(p * sizeof(double));
-    for (size_t i = 0; i < n; i++) {
-        for (size_t j = 0; j < p; j++) {
-            auto *val = (double *) PyArray_GETPTR2(x_, i, j);
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < p; j++) {
+            auto *val = (double *) PyArray_GETPTR2(x_tr_, i, j);
             x[i * p + j] = *val;
+            printf("%lf ", x[i * p + j]);
         }
-        auto *val = (double *) PyArray_GETPTR1(y_, i);
+        auto *val = (double *) PyArray_GETPTR1(y_tr_, i);
         y[i] = *val;
+        printf("%lf \n", y[i]);
     }
-    PyObject *results = PyTuple_New(2);
+    for (i = 0; i < (p + 1); i++) {
+        auto *val = (double *) PyArray_GETPTR1(w0_, i);
+        wt[i] = *val;
+    }
+
+
+    PyObject *results = PyTuple_New(3);
     PyObject *re_wt = PyList_New(p);
+    PyObject *re_intercept = PyList_New(1);
     PyObject *re_losses = PyList_New(max_iter);
     PyTuple_SetItem(results, 0, re_wt);
-    PyTuple_SetItem(results, 1, re_losses);
+    PyTuple_SetItem(results, 1, re_intercept);
+    PyTuple_SetItem(results, 2, re_losses);
+    free(wt);
+    free(y);
+    free(x);
+    return results;
+}
+
+static PyObject *graph_ghtp_logistic(PyObject *self, PyObject *args) {
+    //x_tr, y_tr, w0, lr, sparsity, tol, maximal_iter, eta
+    /**
+     * Gradient Hard Thresholding
+     * DO NOT call this function directly, use the Python Wrapper instead.
+     * list of args:
+     * args[0]: ndarray dim=(n,p) -- training data, x_tr
+     * args[1]: ndarray dim=(n,)  -- labels, y_tr {+1,-1}
+     * args[2]: ndarray dim=(p+1,)-- initial point (including intercept)
+     * args[3]: ndarray np.float64-- learning rate
+     * args[4]: integer np.int32  -- sparsity parameter
+     * args[5]: double  np.float64-- tol tolerance for stop condition
+     * args[6]: integer np.int32  -- maximal_iter maximal iterations.
+     * args[7]: double  np.int32  -- regularization parameter
+     * @return: (wt,losses)
+     */
+    if (self != nullptr) {
+        cerr << "unknown error for no reason." << endl;
+        return nullptr;
+    }
+    PyArrayObject *x_tr_, *y_tr_, *w0_;
+    int n, p, k, max_iter, i, j;
+    double eta, tol, lr;
+    if (!PyArg_ParseTuple(args, "O!O!O!didid",
+                          &PyArray_Type, &x_tr_,
+                          &PyArray_Type, &y_tr_,
+                          &PyArray_Type, &w0_,
+                          &lr, &k, &tol, &max_iter, &eta)) { return nullptr; }
+    n = (int) (x_tr_->dimensions[0]);     // number of samples
+    p = (int) (x_tr_->dimensions[1]);     // number of features
+    auto *x = (double *) malloc(n * p * sizeof(double));
+    auto *y = (double *) malloc(n * sizeof(double));
+    auto *wt = (double *) malloc(p * sizeof(double));
+    for (i = 0; i < n; i++) {
+        for (j = 0; j < p; j++) {
+            auto *val = (double *) PyArray_GETPTR2(x_tr_, i, j);
+            x[i * p + j] = *val;
+            printf("%lf ", x[i * p + j]);
+        }
+        auto *val = (double *) PyArray_GETPTR1(y_tr_, i);
+        y[i] = *val;
+        printf("%lf \n", y[i]);
+    }
+    for (i = 0; i < (p + 1); i++) {
+        auto *val = (double *) PyArray_GETPTR1(w0_, i);
+        wt[i] = *val;
+    }
+
+
+    PyObject *results = PyTuple_New(3);
+    PyObject *re_wt = PyList_New(p);
+    PyObject *re_intercept = PyList_New(1);
+    PyObject *re_losses = PyList_New(max_iter);
+    PyTuple_SetItem(results, 0, re_wt);
+    PyTuple_SetItem(results, 1, re_intercept);
+    PyTuple_SetItem(results, 2, re_losses);
     free(wt);
     free(y);
     free(x);
@@ -326,29 +404,32 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
 
 
 /**
- * Here we defined 4 functions.
+ * Here we defined 6 functions.
  *
  * 1. proj_head
  * 2. proj_tail
  * 3. proj_pcst
- * 4. minimal_spanning_tree
+ * 4. mst: minimal_spanning_tree
+ * 5. ghtp_logistic: gradient hard thresholding pursuit for logistic function.
+ * 6. graph_ghtp_logistic: graph-constrained ghtp_logistic
+ * above 6 functions had been tested on Python2.7.
  *
- * above 3 functions had been tested on Python2.7.
- *
- * defined functions in the proj module.
+ * each function is defined in the proj module.
  * 1. function name in your Python program,
  * 2. function name defined in c program,
  * 3. flags, usually is METH_VARARGS
  * 4. some docs.
  */
 static PyMethodDef proj_methods[] = {
-        {"proj_head", (PyCFunction) proj_head,     METH_VARARGS, "Head docs"},
-        {"proj_tail", (PyCFunction) proj_tail,     METH_VARARGS, "Tail docs"},
-        {"proj_pcst", (PyCFunction) proj_pcst,     METH_VARARGS, "PCST docs"},
-        {"mst",       (PyCFunction) mst,           METH_VARARGS, "mst docs"},
-        {"ghtp_logistic",
-                      (PyCFunction) ghtp_logistic, METH_VARARGS, "mst docs"},
-        {nullptr,     nullptr, 0,                                nullptr}};
+        {"proj_head", (PyCFunction) proj_head, METH_VARARGS, "Head docs"},
+        {"proj_tail", (PyCFunction) proj_tail, METH_VARARGS, "Tail docs"},
+        {"proj_pcst", (PyCFunction) proj_pcst, METH_VARARGS, "PCST docs"},
+        {"mst", (PyCFunction) mst, METH_VARARGS, "mst docs"},
+        {"ghtp_logistic", (PyCFunction) ghtp_logistic,
+         METH_VARARGS, "ghtp_logistic docs"},
+        {"graph_ghtp_logistic", (PyCFunction) graph_ghtp_logistic,
+         METH_VARARGS, "graph_ghtp_logistic docs"},
+        {nullptr, nullptr, 0, nullptr}};
 
 
 #if PY_MAJOR_VERSION >= 3
@@ -375,8 +456,5 @@ PyMODINIT_FUNC initproj_module() {
 #endif
 
 int main() {
-    cout << 5. / 2. << endl;
-    cout << 5. / 2 << endl;
-    cout << "funny test !" << endl;
-    return 0;
+    printf("test");
 }
