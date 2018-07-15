@@ -299,34 +299,39 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
         return nullptr;
     }
     PyArrayObject *x_tr_, *y_tr_, *w0_;
-    int n, p, k, max_iter, i, j;
+    int n, p, sparsity, max_iter, i, j;
     double eta, tol, lr;
     if (!PyArg_ParseTuple(args, "O!O!O!didid",
                           &PyArray_Type, &x_tr_,
                           &PyArray_Type, &y_tr_,
                           &PyArray_Type, &w0_,
-                          &lr, &k, &tol, &max_iter, &eta)) { return nullptr; }
+                          &lr, &sparsity, &tol, &max_iter, &eta)) {
+        return nullptr;
+    }
     n = (int) (x_tr_->dimensions[0]);     // number of samples
     p = (int) (x_tr_->dimensions[1]);     // number of features
-    auto *x = (double *) malloc(n * p * sizeof(double));
-    auto *y = (double *) malloc(n * sizeof(double));
+    printf("n:%d, p:%d\n", n, p);
+    auto *x_tr = (double *) malloc(n * p * sizeof(double));
+    auto *y_tr = (double *) malloc(n * sizeof(double));
     auto *wt = (double *) malloc(p * sizeof(double));
     for (i = 0; i < n; i++) {
         for (j = 0; j < p; j++) {
             auto *val = (double *) PyArray_GETPTR2(x_tr_, i, j);
-            x[i * p + j] = *val;
-            printf("%lf ", x[i * p + j]);
+            x_tr[i * p + j] = *val;
+            printf("%lf ", x_tr[i * p + j]);
         }
         auto *val = (double *) PyArray_GETPTR1(y_tr_, i);
-        y[i] = *val;
-        printf("%lf \n", y[i]);
+        y_tr[i] = *val;
+        printf("%lf \n", y_tr[i]);
     }
+    printf("w0: ");
     for (i = 0; i < (p + 1); i++) {
         auto *val = (double *) PyArray_GETPTR1(w0_, i);
         wt[i] = *val;
+        printf(" %lf", wt[i]);
     }
-
-
+    printf("lr:%lf, sparsity:%d, tol:%lf, maximal_iter:%d, eta:%lf\n",
+           lr, sparsity, tol, max_iter, eta);
     PyObject *results = PyTuple_New(3);
     PyObject *re_wt = PyList_New(p);
     PyObject *re_intercept = PyList_New(1);
@@ -335,8 +340,8 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
     PyTuple_SetItem(results, 1, re_intercept);
     PyTuple_SetItem(results, 2, re_losses);
     free(wt);
-    free(y);
-    free(x);
+    free(y_tr);
+    free(x_tr);
     return results;
 }
 
@@ -383,9 +388,11 @@ static PyObject *graph_ghtp_logistic(PyObject *self, PyObject *args) {
         y[i] = *val;
         printf("%lf \n", y[i]);
     }
+    printf("w0: ");
     for (i = 0; i < (p + 1); i++) {
         auto *val = (double *) PyArray_GETPTR1(w0_, i);
         wt[i] = *val;
+        printf(" %lf", wt[i]);
     }
 
 
@@ -421,15 +428,15 @@ static PyObject *graph_ghtp_logistic(PyObject *self, PyObject *args) {
  * 4. some docs.
  */
 static PyMethodDef proj_methods[] = {
-        {"proj_head", (PyCFunction) proj_head, METH_VARARGS, "Head docs"},
-        {"proj_tail", (PyCFunction) proj_tail, METH_VARARGS, "Tail docs"},
-        {"proj_pcst", (PyCFunction) proj_pcst, METH_VARARGS, "PCST docs"},
-        {"mst", (PyCFunction) mst, METH_VARARGS, "mst docs"},
-        {"ghtp_logistic", (PyCFunction) ghtp_logistic,
-         METH_VARARGS, "ghtp_logistic docs"},
+        {"proj_head",           (PyCFunction) proj_head, METH_VARARGS, "Head docs"},
+        {"proj_tail",           (PyCFunction) proj_tail, METH_VARARGS, "Tail docs"},
+        {"proj_pcst",           (PyCFunction) proj_pcst, METH_VARARGS, "PCST docs"},
+        {"mst",                 (PyCFunction) mst,       METH_VARARGS, "mst docs"},
+        {"ghtp_logistic",       (PyCFunction) ghtp_logistic,
+                                                         METH_VARARGS, "ghtp_logistic docs"},
         {"graph_ghtp_logistic", (PyCFunction) graph_ghtp_logistic,
-         METH_VARARGS, "graph_ghtp_logistic docs"},
-        {nullptr, nullptr, 0, nullptr}};
+                                                         METH_VARARGS, "graph_ghtp_logistic docs"},
+        {nullptr,               nullptr, 0,                            nullptr}};
 
 
 #if PY_MAJOR_VERSION >= 3

@@ -7,6 +7,8 @@ from sparse_learning.fast_pcst import fast_pcst
 from sparse_learning.graph_utils import simu_graph
 from sparse_learning.graph_utils import minimal_spanning_tree
 from sparse_learning.proj_algo import HeadTailWrapper
+from sparse_learning.ghtp_algo import ghtp_logistic_py
+from sparse_learning.ghtp_algo import graph_ghtp_logistic_py
 
 
 def test_proj_algo():
@@ -132,13 +134,19 @@ def test_mst_performance():
 
 
 def test_graph_ghtp():
-    pass
+    x_tr = np.asarray([[1., 2., 3., 4.], [1., 2., 3., 4.], [1., 2., 3., 4.]], dtype=np.float64)
+    y_tr = np.asarray([1., 1., -1.], dtype=np.float64)
+    w0 = np.asarray([0., 0., 0., 0., 0.])
+    lr = 0.1
+    sparsity = 2
+    tol = 1e-6
+    max_iter = 50
+    eta = 1e-3
+    ghtp_logistic_py(x_tr=x_tr, y_tr=y_tr, w0=w0, lr=lr, sparsity=sparsity, tol=tol, max_iter=max_iter, eta=eta)
 
 
 def main():
-    test_proj_algo()
-    test_fast_pcst()
-    test_mst_performance()
+    test_graph_ghtp()
 
 
 if __name__ == '__main__':

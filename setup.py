@@ -50,7 +50,7 @@ setup(
     # specify requirements of your package here
     # will add openblas in later version.
     install_requires=['numpy'],
-    headers=['cpp/head_tail.h', 'cpp/pcst_fast.h'],
+    headers=['cpp/head_tail.h', 'cpp/pcst_fast.h', 'cpp/union_find.h'],
     # define the extension module
     ext_modules=[Extension('proj_module',
                            sources=['cpp/main_wrapper.cpp'],
