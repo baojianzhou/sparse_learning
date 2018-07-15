@@ -50,14 +50,14 @@ static PyObject *proj_head(PyObject *self, PyObject *args) {
             &max_iter, &err_tol, &root, &pruning, &epsilon, &verbose)) {
         return nullptr;
     }
-    long n = vector_x_->dimensions[0]; // number of nodes
+    long n = vector_x_->dimensions[0];  // number of nodes
     long m = edges_->dimensions[0];     // number of edges
     vector<pair<int, int> > edges;
     vector<double> costs;
     vector<double> prizes;
     vector<double> vector_x;
     PyObject *results = PyTuple_New(3);
-    PyObject *p_x = PyList_New(n); // projected x
+    PyObject *p_x = PyList_New(n);      // projected x
     for (size_t i = 0; i < m; i++) {
         auto *u = (int *) PyArray_GETPTR2(edges_, i, 0);
         auto *v = (int *) PyArray_GETPTR2(edges_, i, 1);
@@ -128,14 +128,14 @@ static PyObject *proj_tail(PyObject *self, PyObject *args) {
             &max_iter, &err_tol, &root, &pruning, &epsilon, &verbose)) {
         return nullptr;
     }
-    long n = vector_x_->dimensions[0]; // number of nodes
+    long n = vector_x_->dimensions[0];  // number of nodes
     long m = edges_->dimensions[0];     // number of edges
     vector<pair<int, int> > edges;
     vector<double> costs;
     vector<double> prizes;
     vector<double> vector_x;
     PyObject *results = PyTuple_New(3);
-    PyObject *p_x = PyList_New(n); // projected x
+    PyObject *p_x = PyList_New(n);      // projected x
     for (size_t i = 0; i < m; i++) {
         auto *u = (int *) PyArray_GETPTR2(edges_, i, 0);
         auto *v = (int *) PyArray_GETPTR2(edges_, i, 1);
@@ -198,7 +198,7 @@ static PyObject *proj_pcst(PyObject *self, PyObject *args) {
                           &PyArray_Type, &prizes_, &PyArray_Type,
                           &edge_weights_, &root, &g, &pruning,
                           &epsilon, &verbose)) { return nullptr; }
-    long n = prizes_->dimensions[0]; // number of nodes
+    long n = prizes_->dimensions[0];    // number of nodes
     long m = edges_->dimensions[0];     // number of edges
     vector<pair<int, int> > edges;
     vector<double> costs;

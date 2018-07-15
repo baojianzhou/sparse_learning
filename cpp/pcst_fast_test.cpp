@@ -78,7 +78,7 @@ void test_1() {
     vector<int> edge_result;
 
     PCSTFast algo(edges, prizes, costs, root, target_num_active_clusters,
-                  pruning, 0, NULL);
+                  pruning, 1e-6, 0, NULL);
     algo.run(&node_result, &edge_result);
     std::sort(node_result.begin(), node_result.end());
     std::sort(edge_result.begin(), edge_result.end());
@@ -107,7 +107,7 @@ void test_2() {
     vector<int> edge_result;
 
     PCSTFast algo(edges, prizes, costs, root, target_num_active_clusters,
-                  pruning, 0, NULL);
+                  pruning, 1e-6, 0, NULL);
     algo.run(&node_result, &edge_result);
     std::sort(node_result.begin(), node_result.end());
     std::sort(edge_result.begin(), edge_result.end());
@@ -136,7 +136,7 @@ void test_3() {
     vector<int> edge_result;
 
     PCSTFast algo(edges, prizes, costs, root, target_num_active_clusters,
-                  pruning, 0, NULL);
+                  pruning, 1e-6, 0, NULL);
     algo.run(&node_result, &edge_result);
     std::sort(node_result.begin(), node_result.end());
     std::sort(edge_result.begin(), edge_result.end());
@@ -158,21 +158,8 @@ void test_4() {
     edges.push_back(make_pair(4, 5));
     edges.push_back(make_pair(5, 6));
     edges.push_back(make_pair(6, 7));
-    vector<double> prizes = {100.0,
-                             0.0,
-                             0.0,
-                             1.0,
-                             0.0,
-                             0.0,
-                             0.0,
-                             100.0};
-    vector<double> costs = {0.9,
-                            0.9,
-                            0.9,
-                            0.9,
-                            0.9,
-                            0.9,
-                            0.9};
+    vector<double> prizes = {100.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 100.0};
+    vector<double> costs = {0.9, 0.9, 0.9, 0.9, 0.9, 0.9, 0.9};
     int root = -1;
     int target_num_active_clusters = 1;
     PCSTFast::PruningMethod pruning = PCSTFast::kGWPruning;
@@ -184,7 +171,7 @@ void test_4() {
     vector<int> edge_result;
 
     PCSTFast algo(edges, prizes, costs, root, target_num_active_clusters,
-                  pruning, 0, NULL);
+                  pruning, 1e-6, 0, NULL);
     algo.run(&node_result, &edge_result);
     std::sort(node_result.begin(), node_result.end());
     std::sort(edge_result.begin(), edge_result.end());
@@ -266,7 +253,7 @@ void test_5() {
     vector<int> node_result;
     vector<int> edge_result;
     PCSTFast algo(edges, prizes, costs, root, target_num_active_clusters,
-                  pruning, 0, NULL);
+                  pruning, 1e-6, 0, NULL);
     algo.run(&node_result, &edge_result);
     std::sort(node_result.begin(), node_result.end());
     std::sort(edge_result.begin(), edge_result.end());

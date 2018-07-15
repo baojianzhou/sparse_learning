@@ -64,7 +64,8 @@ void test_tail_proj() {
     }
     //4. cost budget C
     double C = 2. * budget;
-    HeadApprox head(edges, costs, prizes, g, s, C, delta);
+    HeadApprox head(edges, costs, prizes, g, s, C, delta,
+                    50, 1e-8, -1, "strong", 1e-6, 0);
     pair<vector<int>, vector<int>> f = head.run();
     //5. package the result nodes and edges.
     cout << "node result: " << endl;
@@ -103,7 +104,8 @@ void test_head_proj() {
     //4. cost budget C
     double C = 2. * budget;
     double delta = min(0.5, 1. / nu);
-    TailApprox tail(edges, costs, prizes, g, s, C, nu, delta);
+    TailApprox tail(edges, costs, prizes, g, s, C, nu,
+                    50, 1e-8, -1, "strong", 1e-6, 0);
     pair<vector<int>, vector<int>> f = tail.run();
     //5. package the result nodes and edges.
     cout << "node result: " << endl;

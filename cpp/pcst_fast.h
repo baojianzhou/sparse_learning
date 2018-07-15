@@ -47,7 +47,7 @@ using std::make_pair;
 
 
 namespace cluster_approx {
-    template <typename ValueType, typename IndexType>
+    template<typename ValueType, typename IndexType>
     class PriorityQueue {
     public:
         PriorityQueue() {}
@@ -56,7 +56,7 @@ namespace cluster_approx {
             return sorted_set.empty();
         }
 
-        bool get_min(ValueType* value, IndexType* index) {
+        bool get_min(ValueType *value, IndexType *index) {
             if (sorted_set.empty()) {
                 return false;
             }
@@ -65,7 +65,7 @@ namespace cluster_approx {
             return true;
         }
 
-        bool delete_min(ValueType* value, IndexType* index) {
+        bool delete_min(ValueType *value, IndexType *index) {
             if (sorted_set.empty()) {
                 return false;
             }
@@ -99,34 +99,33 @@ namespace cluster_approx {
                 index_to_iterator;
     };
 
-    template <typename ValueType, typename PayloadType>
+    template<typename ValueType, typename PayloadType>
     class PairingHeap {
     private:
         struct Node {
-            Node* sibling;
-            Node* child;
-            Node* left_up;
+            Node *sibling;
+            Node *child;
+            Node *left_up;
             ValueType value;
             ValueType child_offset;
             PayloadType payload;
         };
 
     public:
-        typedef Node* ItemHandle;
+        typedef Node *ItemHandle;
 
-        PairingHeap(std::vector<ItemHandle>* shared_buffer) : root(NULL) {
+        PairingHeap(std::vector<ItemHandle> *shared_buffer) : root(NULL) {
             buffer = shared_buffer;
         }
 
         void release_memory() {
-            // Delete heap nodes
-            buffer->resize(0);
+            buffer->resize(0); // Delete heap nodes
             if (root != NULL) {
                 buffer->push_back(root);
             }
             size_t curi = 0;
             while (curi < buffer->size()) {
-                Node* cur_node = (*buffer)[curi];
+                Node *cur_node = (*buffer)[curi];
                 if (cur_node->child != NULL) {
                     buffer->push_back(cur_node->child);
                 }
@@ -144,10 +143,8 @@ namespace cluster_approx {
             return root == NULL;
         }
 
-        bool get_min(ValueType* value, PayloadType* payload) {
+        bool get_min(ValueType *value, PayloadType *payload) {
             if (root != NULL) {
-                //printf("In get_min, current root: %x\n", root);
-                //fflush(stdout);
                 *value = root->value;
                 *payload = root->payload;
                 return true;
@@ -157,7 +154,7 @@ namespace cluster_approx {
         }
 
         ItemHandle insert(ValueType value, PayloadType payload) {
-            Node* new_node = new Node();
+            Node *new_node = new Node();
             new_node->sibling = NULL;
             new_node->child = NULL;
             new_node->left_up = NULL;
@@ -175,7 +172,8 @@ namespace cluster_approx {
             }
         }
 
-        void decrease_key(ItemHandle node, ValueType from_value, ValueType to_value) {
+        void decrease_key(ItemHandle node, ValueType from_value,
+                          ValueType to_value) {
             ValueType additional_offset = from_value - node->value;
             node->child_offset += additional_offset;
             node->value = to_value;
@@ -194,20 +192,16 @@ namespace cluster_approx {
             }
         }
 
-        bool delete_min(ValueType* value, PayloadType* payload) {
+        bool delete_min(ValueType *value, PayloadType *payload) {
             if (root == NULL) {
                 return false;
             }
-            //printf("In delete_min, root is %x (payload %d)\n", root, root->payload);
-            //fflush(stdout);
-            Node* result = root;
+            Node *result = root;
             buffer->resize(0);
-            Node* cur_child = root->child;
-            Node* next_child = NULL;
+            Node *cur_child = root->child;
+            Node *next_child = NULL;
             while (cur_child != NULL) {
                 buffer->push_back(cur_child);
-                //printf("In delete_min, added child %x to buffer\n", cur_child);
-                //fflush(stdout);
                 next_child = cur_child->sibling;
                 cur_child->left_up = NULL;
                 cur_child->sibling = NULL;
@@ -216,13 +210,11 @@ namespace cluster_approx {
                 cur_child = next_child;
             }
 
-            //printf("In delete_min, root hat %lu children\n", buffer->size());
-            //fflush(stdout);
-
             size_t merged_children = 0;
             while (merged_children + 2 <= buffer->size()) {
                 (*buffer)[merged_children / 2] = link(
-                        (*buffer)[merged_children], (*buffer)[merged_children + 1]);
+                        (*buffer)[merged_children],
+                        (*buffer)[merged_children + 1]);
                 merged_children += 2;
             }
             if (merged_children != buffer->size()) {
@@ -243,14 +235,11 @@ namespace cluster_approx {
 
             *value = result->value;
             *payload = result->payload;
-            //printf("In delete_min, deleting %x\n", result);
-            //printf("In delete_min, new root: %x\n", root);
-            //fflush(stdout);
             delete result;
             return true;
         }
 
-        static PairingHeap meld(PairingHeap* heap1, PairingHeap* heap2) {
+        static PairingHeap meld(PairingHeap *heap1, PairingHeap *heap2) {
             PairingHeap result(heap1->buffer);
             result.root = link(heap1->root, heap2->root);
             heap1->root = NULL;
@@ -259,25 +248,22 @@ namespace cluster_approx {
         }
 
     private:
-        Node* root;
-        std::vector<ItemHandle>* buffer;
+        Node *root;
+        std::vector<ItemHandle> *buffer;
 
-        static Node* link(Node* node1, Node* node2) {
+        static Node *link(Node *node1, Node *node2) {
             if (node1 == NULL) {
                 return node2;
             }
             if (node2 == NULL) {
                 return node1;
             }
-            Node* smaller_node = node2;
-            Node* larger_node = node1;
+            Node *smaller_node = node2;
+            Node *larger_node = node1;
             if (node1->value < node2->value) {
                 smaller_node = node1;
                 larger_node = node2;
             }
-            //printf("Linking %x (smaller node) and %x (larger node)\n",
-            //    smaller_node, larger_node);
-            //fflush(stdout);
             larger_node->sibling = smaller_node->child;
             if (larger_node->sibling != NULL) {
                 larger_node->sibling->left_up = larger_node;
@@ -289,7 +275,6 @@ namespace cluster_approx {
             return smaller_node;
         }
     };
-
 
 
     class PCSTFast {
@@ -314,29 +299,29 @@ namespace cluster_approx {
             long long num_active_inactive_edge_growth_events;
             long long num_cluster_events;
 
-            Statistics(){
+            Statistics() {
 
             }
         };
 
         const static int kNoRoot = -1;
 
-        static PruningMethod parse_pruning_method(const std::string &input){
-                PruningMethod result = kUnknownPruning;
-                std::string input_lower(' ', input.size());
-                for (size_t ii = 0; ii < input.size(); ++ii) {
-                    input_lower[ii] = tolower(input[ii]);
-                }
-                if (input == "none") {
-                    result = kNoPruning;
-                } else if (input == "simple") {
-                    result = kSimplePruning;
-                } else if (input == "gw") {
-                    result = kGWPruning;
-                } else if (input == "strong") {
-                    result = kStrongPruning;
-                }
-                return result;
+        static PruningMethod parse_pruning_method(const std::string &input) {
+            PruningMethod result = kUnknownPruning;
+            std::string input_lower(' ', input.size());
+            for (size_t ii = 0; ii < input.size(); ++ii) {
+                input_lower[ii] = tolower(input[ii]);
+            }
+            if (input == "none") {
+                result = kNoPruning;
+            } else if (input == "simple") {
+                result = kSimplePruning;
+            } else if (input == "gw") {
+                result = kGWPruning;
+            } else if (input == "strong") {
+                result = kStrongPruning;
+            }
+            return result;
         }
 
 
@@ -348,11 +333,11 @@ namespace cluster_approx {
                  PruningMethod pruning_,
                  double epsilon,
                  int verbosity_level_,
-                 void (*output_function_)(const char*))
-        : edges(edges_), prizes(prizes_), costs(costs_), root(root_),
-        target_num_active_clusters(target_num_active_clusters_),
-        pruning(pruning_), verbosity_level(verbosity_level_),
-        output_function(output_function_) {
+                 void (*output_function_)(const char *))
+                : edges(edges_), prizes(prizes_), costs(costs_), root(root_),
+                  target_num_active_clusters(target_num_active_clusters_),
+                  pruning(pruning_), verbosity_level(verbosity_level_),
+                  output_function(output_function_) {
 
             edge_parts.resize(2 * edges.size());
             node_deleted.resize(prizes.size(), false);
@@ -430,7 +415,6 @@ namespace cluster_approx {
                     uu_part.next_event_val = 0.0;
                     vv_part.next_event_val = 0.0;
                 }
-
                 // current_time = 0, so the next event time for each edge is the
                 // same as the next_event_val
                 uu_part.heap_node = uu_cluster.edge_parts.insert(
@@ -451,14 +435,14 @@ namespace cluster_approx {
             }
         }
 
-        ~PCSTFast(){
+        ~PCSTFast() {
             for (size_t ii = 0; ii < clusters.size(); ++ii) {
                 clusters[ii].edge_parts.release_memory();
             }
         }
 
         bool run(std::vector<int> *result_nodes,
-                 std::vector<int> *result_edges){
+                 std::vector<int> *result_edges) {
             result_nodes->clear();
             result_edges->clear();
 
@@ -496,7 +480,8 @@ namespace cluster_approx {
                                     &next_edge_part_index);
                 double next_cluster_time;
                 int next_cluster_index;
-                get_next_cluster_event(&next_cluster_time, &next_cluster_index);
+                get_next_cluster_event(&next_cluster_time,
+                                       &next_cluster_index);
 
                 //////////////////////////////////////////
                 if (verbosity_level >= 2) {
@@ -555,7 +540,8 @@ namespace cluster_approx {
                                          &other_cluster_index);
 
                     double remainder = current_edge_cost
-                                       - sum_current_edge_part - sum_other_edge_part;
+                                       - sum_current_edge_part -
+                                       sum_other_edge_part;
 
                     Cluster &current_cluster = clusters[current_cluster_index];
                     Cluster &other_cluster = clusters[other_cluster_index];
@@ -597,7 +583,8 @@ namespace cluster_approx {
                         continue;
                     }
 
-                    if (remainder < eps * current_edge_cost || remainder == 0.0) {
+                    if (remainder < eps * current_edge_cost ||
+                        remainder == 0.0) {
                         stats.total_num_merge_events += 1;
 
                         phase1_result.push_back(next_edge_part_index / 2);
@@ -615,7 +602,8 @@ namespace cluster_approx {
                         //////////////////////////////////////////
                         if (verbosity_level >= 2) {
                             snprintf(output_buffer, kOutputBufferSize,
-                                     "Merge %d and %d into %d\n", current_cluster_index,
+                                     "Merge %d and %d into %d\n",
+                                     current_cluster_index,
                                      other_cluster_index, new_cluster_index);
                             output_function(output_buffer);
                         }
@@ -627,8 +615,9 @@ namespace cluster_approx {
                         new_cluster.subcluster_moat_sum =
                                 current_cluster.subcluster_moat_sum
                                 + other_cluster.subcluster_moat_sum;
-                        new_cluster.contains_root = current_cluster.contains_root
-                                                    || other_cluster.contains_root;
+                        new_cluster.contains_root =
+                                current_cluster.contains_root
+                                || other_cluster.contains_root;
                         new_cluster.active = !new_cluster.contains_root;
                         new_cluster.merged_along = next_edge_part_index / 2;
                         new_cluster.child_cluster_1 = current_cluster_index;
@@ -639,11 +628,14 @@ namespace cluster_approx {
                         new_cluster.merged_into = -1;
 
                         current_cluster.active = false;
-                        current_cluster.active_end_time = current_time + remainder;
+                        current_cluster.active_end_time =
+                                current_time + remainder;
                         current_cluster.merged_into = new_cluster_index;
                         current_cluster.moat = current_cluster.active_end_time
-                                               - current_cluster.active_start_time;
-                        clusters_deactivation.delete_element(current_cluster_index);
+                                               -
+                                               current_cluster.active_start_time;
+                        clusters_deactivation.delete_element(
+                                current_cluster_index);
                         num_active_clusters -= 1;
                         if (!current_cluster.edge_parts.is_empty()) {
                             clusters_next_edge_event.delete_element(
@@ -654,10 +646,13 @@ namespace cluster_approx {
                             stats.num_active_active_merge_events += 1;
 
                             other_cluster.active = false;
-                            other_cluster.active_end_time = current_time + remainder;
+                            other_cluster.active_end_time =
+                                    current_time + remainder;
                             other_cluster.moat = other_cluster.active_end_time
-                                                 - other_cluster.active_start_time;
-                            clusters_deactivation.delete_element(other_cluster_index);
+                                                 -
+                                                 other_cluster.active_start_time;
+                            clusters_deactivation.delete_element(
+                                    other_cluster_index);
                             if (!other_cluster.edge_parts.is_empty()) {
                                 clusters_next_edge_event.delete_element(
                                         other_cluster_index);
@@ -667,24 +662,30 @@ namespace cluster_approx {
                             stats.num_active_inactive_merge_events += 1;
 
                             if (!other_cluster.contains_root) {
-                                double edge_event_update_time = current_time + remainder
-                                                                -
-                                                                other_cluster.active_end_time;
+                                double edge_event_update_time =
+                                        current_time + remainder
+                                        -
+                                        other_cluster.active_end_time;
                                 other_cluster.edge_parts.add_to_heap(
                                         edge_event_update_time);
-                                inactive_merge_events.push_back(InactiveMergeEvent());
+                                inactive_merge_events.push_back(
+                                        InactiveMergeEvent());
                                 InactiveMergeEvent &merge_event =
                                         inactive_merge_events[
-                                                inactive_merge_events.size() - 1];
+                                                inactive_merge_events.size() -
+                                                1];
 
                                 merge_event.active_cluster_index = current_cluster_index;
                                 merge_event.inactive_cluster_index = other_cluster_index;
-                                int active_node_part = edges[next_edge_part_index /
-                                                             2].first;
-                                int inactive_node_part = edges[next_edge_part_index /
-                                                               2].second;
+                                int active_node_part = edges[
+                                        next_edge_part_index /
+                                        2].first;
+                                int inactive_node_part = edges[
+                                        next_edge_part_index /
+                                        2].second;
                                 if (next_edge_part_index % 2 == 1) {
-                                    std::swap(active_node_part, inactive_node_part);
+                                    std::swap(active_node_part,
+                                              inactive_node_part);
                                 }
                                 merge_event.active_cluster_node = active_node_part;
                                 merge_event.inactive_cluster_node = inactive_node_part;
@@ -704,17 +705,21 @@ namespace cluster_approx {
                         new_cluster.subcluster_moat_sum += other_cluster.moat;
 
                         if (new_cluster.active) {
-                            new_cluster.active_start_time = current_time + remainder;
-                            double becoming_inactive_time = current_time + remainder
-                                                            + new_cluster.prize_sum
-                                                            -
-                                                            new_cluster.subcluster_moat_sum;
-                            clusters_deactivation.insert(becoming_inactive_time,
-                                                         new_cluster_index);
+                            new_cluster.active_start_time =
+                                    current_time + remainder;
+                            double becoming_inactive_time =
+                                    current_time + remainder
+                                    + new_cluster.prize_sum
+                                    -
+                                    new_cluster.subcluster_moat_sum;
+                            clusters_deactivation.insert(
+                                    becoming_inactive_time,
+                                    new_cluster_index);
                             if (!new_cluster.edge_parts.is_empty()) {
                                 double tmp_val;
                                 int tmp_index;
-                                new_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
+                                new_cluster.edge_parts.get_min(&tmp_val,
+                                                               &tmp_index);
                                 clusters_next_edge_event.insert(tmp_val,
                                                                 new_cluster_index);
                             }
@@ -724,7 +729,8 @@ namespace cluster_approx {
                         stats.total_num_edge_growth_events += 1;
                         stats.num_active_active_edge_growth_events += 1;
 
-                        double next_event_time = current_time + remainder / 2.0;
+                        double next_event_time =
+                                current_time + remainder / 2.0;
                         next_edge_part.next_event_val =
                                 sum_current_edge_part + remainder / 2.0;
                         if (!current_cluster.edge_parts.is_empty()) {
@@ -735,10 +741,13 @@ namespace cluster_approx {
                                 next_event_time, next_edge_part_index);
                         double tmp_val = -1.0;
                         int tmp_index = -1;
-                        current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
-                        clusters_next_edge_event.insert(tmp_val, current_cluster_index);
+                        current_cluster.edge_parts.get_min(&tmp_val,
+                                                           &tmp_index);
+                        clusters_next_edge_event.insert(tmp_val,
+                                                        current_cluster_index);
 
-                        clusters_next_edge_event.delete_element(other_cluster_index);
+                        clusters_next_edge_event.delete_element(
+                                other_cluster_index);
                         other_cluster.edge_parts.decrease_key(
                                 other_edge_part.heap_node,
                                 other_cluster.active_start_time +
@@ -746,14 +755,16 @@ namespace cluster_approx {
                                 - other_finished_moat_sum,
                                 next_event_time);
                         other_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
-                        clusters_next_edge_event.insert(tmp_val, other_cluster_index);
+                        clusters_next_edge_event.insert(tmp_val,
+                                                        other_cluster_index);
                         other_edge_part.next_event_val =
                                 sum_other_edge_part + remainder / 2.0;
 
                         //////////////////////////////////////////
                         if (verbosity_level >= 2) {
                             snprintf(output_buffer, kOutputBufferSize,
-                                     "Added new event at time %lf\n", next_event_time);
+                                     "Added new event at time %lf\n",
+                                     next_event_time);
                             output_function(output_buffer);
                         }
                         //////////////////////////////////////////
@@ -763,7 +774,8 @@ namespace cluster_approx {
 
                         double next_event_time = current_time + remainder;
                         next_edge_part.next_event_val = current_edge_cost
-                                                        - other_finished_moat_sum;
+                                                        -
+                                                        other_finished_moat_sum;
                         if (!current_cluster.edge_parts.is_empty()) {
                             clusters_next_edge_event.delete_element(
                                     current_cluster_index);
@@ -772,8 +784,10 @@ namespace cluster_approx {
                                 next_event_time, next_edge_part_index);
                         double tmp_val = -1.0;
                         int tmp_index = -1;
-                        current_cluster.edge_parts.get_min(&tmp_val, &tmp_index);
-                        clusters_next_edge_event.insert(tmp_val, current_cluster_index);
+                        current_cluster.edge_parts.get_min(&tmp_val,
+                                                           &tmp_index);
+                        clusters_next_edge_event.insert(tmp_val,
+                                                        current_cluster_index);
 
                         other_cluster.edge_parts.decrease_key(
                                 other_edge_part.heap_node,
@@ -806,7 +820,8 @@ namespace cluster_approx {
                     cur_cluster.moat = cur_cluster.active_end_time
                                        - cur_cluster.active_start_time;
                     if (!cur_cluster.edge_parts.is_empty()) {
-                        clusters_next_edge_event.delete_element(next_cluster_index);
+                        clusters_next_edge_event.delete_element(
+                                next_cluster_index);
                     }
                     num_active_clusters -= 1;
 
@@ -814,7 +829,8 @@ namespace cluster_approx {
                     if (verbosity_level >= 2) {
                         snprintf(output_buffer, kOutputBufferSize,
                                  "Cluster deactivation: cluster %d at time %lf (moat size %lf)\n",
-                                 next_cluster_index, current_time, cur_cluster.moat);
+                                 next_cluster_index, current_time,
+                                 cur_cluster.moat);
                         output_function(output_buffer);
                     }
                     //////////////////////////////////////////
@@ -837,7 +853,8 @@ namespace cluster_approx {
             if (root >= 0) {
                 // uf_find the root cluster
                 for (size_t ii = 0; ii < clusters.size(); ++ii) {
-                    if (clusters[ii].contains_root && clusters[ii].merged_into == -1) {
+                    if (clusters[ii].contains_root &&
+                        clusters[ii].merged_into == -1) {
                         mark_nodes_as_good(ii);
                         break;
                     }
@@ -861,7 +878,8 @@ namespace cluster_approx {
                 snprintf(output_buffer, kOutputBufferSize,
                          "------------------------------------------\n");
                 output_function(output_buffer);
-                snprintf(output_buffer, kOutputBufferSize, "Starting pruning\n");
+                snprintf(output_buffer, kOutputBufferSize,
+                         "Starting pruning\n");
                 output_function(output_buffer);
             }
             //////////////////////////////////////////
@@ -964,7 +982,8 @@ namespace cluster_approx {
                             //////////////////////////////////////////
 
                         } else {
-                            mark_nodes_as_deleted(inactive_side_node, active_side_node);
+                            mark_nodes_as_deleted(inactive_side_node,
+                                                  active_side_node);
 
                             //////////////////////////////////////////
                             if (verbosity_level >= 2) {
@@ -1003,7 +1022,8 @@ namespace cluster_approx {
 
                 final_component_label.resize(prizes.size(), -1);
                 root_component_index = -1;
-                strong_pruning_parent.resize(prizes.size(), make_pair(-1, -1.0));
+                strong_pruning_parent.resize(prizes.size(),
+                                             make_pair(-1, -1.0));
                 strong_pruning_payoff.resize(prizes.size(), -1.0);
 
                 for (size_t ii = 0; ii < phase2_result.size(); ++ii) {
@@ -1015,13 +1035,15 @@ namespace cluster_approx {
                     }
                 }
 
-                for (int ii = 0; ii < static_cast<int>(final_components.size()); ++ii) {
+                for (int ii = 0;
+                     ii < static_cast<int>(final_components.size()); ++ii) {
 
                     //////////////////////////////////////////
                     if (verbosity_level >= 2) {
                         snprintf(output_buffer, kOutputBufferSize,
                                  "Strong pruning on final component %d (size %d):\n",
-                                 ii, static_cast<int>(final_components[ii].size()));
+                                 ii,
+                                 static_cast<int>(final_components[ii].size()));
                         output_function(output_buffer);
                     }
                     //////////////////////////////////////////
@@ -1055,7 +1077,8 @@ namespace cluster_approx {
                     }
                 }
 
-                for (int ii = 0; ii < static_cast<int>(phase2_result.size()); ++ii) {
+                for (int ii = 0;
+                     ii < static_cast<int>(phase2_result.size()); ++ii) {
                     int cur_edge_index = phase2_result[ii];
                     int uu = edges[cur_edge_index].first;
                     int vv = edges[cur_edge_index].second;
@@ -1088,7 +1111,7 @@ namespace cluster_approx {
             return false;
         }
 
-        void get_statistics(Statistics *s){
+        void get_statistics(Statistics *s) {
             *s = stats;
         }
 
@@ -1180,7 +1203,7 @@ namespace cluster_approx {
 
         void get_next_edge_event(double *next_time,
                                  int *next_cluster_index,
-                                 int *next_edge_part_index){
+                                 int *next_edge_part_index) {
             if (clusters_next_edge_event.is_empty()) {
                 *next_time = std::numeric_limits<double>::infinity();
                 *next_cluster_index = -1;
@@ -1193,20 +1216,21 @@ namespace cluster_approx {
                                                              next_edge_part_index);
         }
 
-        void remove_next_edge_event(int next_cluster_index){
+        void remove_next_edge_event(int next_cluster_index) {
             clusters_next_edge_event.delete_element(next_cluster_index);
             double tmp_value;
             int tmp_edge_part;
             clusters[next_cluster_index].edge_parts.delete_min(&tmp_value,
                                                                &tmp_edge_part);
             if (!clusters[next_cluster_index].edge_parts.is_empty()) {
-                clusters[next_cluster_index].edge_parts.get_min(&tmp_value, &tmp_edge_part);
+                clusters[next_cluster_index].edge_parts.get_min(&tmp_value,
+                                                                &tmp_edge_part);
                 clusters_next_edge_event.insert(tmp_value, next_cluster_index);
             }
         }
 
         void
-        get_next_cluster_event(double *next_time, int *next_cluster_index){
+        get_next_cluster_event(double *next_time, int *next_cluster_index) {
             if (clusters_deactivation.is_empty()) {
                 *next_time = std::numeric_limits<double>::infinity();
                 *next_cluster_index = -1;
@@ -1216,7 +1240,7 @@ namespace cluster_approx {
             clusters_deactivation.get_min(next_time, next_cluster_index);
         }
 
-        void remove_next_cluster_event(){
+        void remove_next_cluster_event() {
             double tmp_value;
             int tmp_cluster;
             clusters_deactivation.delete_min(&tmp_value, &tmp_cluster);
@@ -1225,7 +1249,7 @@ namespace cluster_approx {
         void get_sum_on_edge_part(int edge_part_index,
                                   double *total_sum,
                                   double *finished_moat_sum,
-                                  int *cur_cluster_index){
+                                  int *cur_cluster_index) {
             int endpoint = edges[edge_part_index / 2].first;
             if (edge_part_index % 2 == 1) {
                 endpoint = edges[edge_part_index / 2].second;
@@ -1236,8 +1260,9 @@ namespace cluster_approx {
             path_compression_visited.resize(0);
 
             while (clusters[*cur_cluster_index].merged_into != -1) {
-                path_compression_visited.push_back(std::make_pair(*cur_cluster_index,
-                                                             *total_sum));
+                path_compression_visited.push_back(
+                        std::make_pair(*cur_cluster_index,
+                                       *total_sum));
                 if (clusters[*cur_cluster_index].skip_up >= 0) {
                     *total_sum += clusters[*cur_cluster_index].skip_up_sum;
                     *cur_cluster_index = clusters[*cur_cluster_index].skip_up;
@@ -1247,24 +1272,27 @@ namespace cluster_approx {
                 }
             }
 
-            for (int ii = 0; ii < static_cast<int>(path_compression_visited.size());
+            for (int ii = 0;
+                 ii < static_cast<int>(path_compression_visited.size());
                  ++ii) {
                 int visited_cluster_index = path_compression_visited[ii].first;
                 double visited_sum = path_compression_visited[ii].second;
                 clusters[visited_cluster_index].skip_up = *cur_cluster_index;
-                clusters[visited_cluster_index].skip_up_sum = *total_sum - visited_sum;
+                clusters[visited_cluster_index].skip_up_sum =
+                        *total_sum - visited_sum;
             }
 
             if (clusters[*cur_cluster_index].active) {
                 *finished_moat_sum = *total_sum;
-                *total_sum += current_time - clusters[*cur_cluster_index].active_start_time;
+                *total_sum += current_time -
+                              clusters[*cur_cluster_index].active_start_time;
             } else {
                 *total_sum += clusters[*cur_cluster_index].moat;
                 *finished_moat_sum = *total_sum;
             }
         }
 
-        void mark_nodes_as_good(int start_cluster_index){
+        void mark_nodes_as_good(int start_cluster_index) {
             cluster_queue.resize(0);
             int queue_index = 0;
             cluster_queue.push_back(start_cluster_index);
@@ -1282,7 +1310,7 @@ namespace cluster_approx {
             }
         }
 
-        void mark_clusters_as_necessary(int start_cluster_index){
+        void mark_clusters_as_necessary(int start_cluster_index) {
             int cur_cluster_index = start_cluster_index;
             while (!clusters[cur_cluster_index].necessary) {
                 clusters[cur_cluster_index].necessary = true;
@@ -1295,7 +1323,7 @@ namespace cluster_approx {
         }
 
         void
-        mark_nodes_as_deleted(int start_node_index, int parent_node_index){
+        mark_nodes_as_deleted(int start_node_index, int parent_node_index) {
             node_deleted[start_node_index] = true;
             cluster_queue.resize(0);
             int queue_index = 0;
@@ -1304,7 +1332,8 @@ namespace cluster_approx {
                 int cur_node_index = cluster_queue[queue_index];
                 queue_index += 1;
                 for (int ii = 0;
-                     ii < static_cast<int>(phase3_neighbors[cur_node_index].size());
+                     ii <
+                     static_cast<int>(phase3_neighbors[cur_node_index].size());
                      ++ii) {
                     int next_node_index = phase3_neighbors[cur_node_index][ii].first;
                     if (next_node_index == parent_node_index) {
@@ -1321,7 +1350,7 @@ namespace cluster_approx {
         }
 
         void
-        label_final_component(int start_node_index, int new_component_index){
+        label_final_component(int start_node_index, int new_component_index) {
             cluster_queue.resize(0);
             cluster_queue.push_back(start_node_index);
             final_component_label[start_node_index] = new_component_index;
@@ -1330,7 +1359,8 @@ namespace cluster_approx {
             while (queue_next < static_cast<int>(cluster_queue.size())) {
                 int cur_node_index = cluster_queue[queue_next];
                 queue_next += 1;
-                final_components[new_component_index].push_back(cur_node_index);
+                final_components[new_component_index].push_back(
+                        cur_node_index);
                 if (cur_node_index == root) {
                     root_component_index = new_component_index;
                 }
@@ -1345,7 +1375,7 @@ namespace cluster_approx {
             }
         }
 
-        void strong_pruning_from(int start_node_index, bool mark_as_deleted){
+        void strong_pruning_from(int start_node_index, bool mark_as_deleted) {
             stack.resize(0);
             stack.push_back(std::make_pair(true, start_node_index));
             strong_pruning_parent[start_node_index] = std::make_pair(-1, 0.0);
@@ -1384,7 +1414,8 @@ namespace cluster_approx {
                         }
 
                         double next_payoff =
-                                strong_pruning_payoff[next_node_index] - next_cost;
+                                strong_pruning_payoff[next_node_index] -
+                                next_cost;
                         if (next_payoff <= 0.0) {
                             if (mark_as_deleted) {
 
@@ -1399,7 +1430,8 @@ namespace cluster_approx {
                                 }
                                 //////////////////////////////////////////
 
-                                mark_nodes_as_deleted(next_node_index, cur_node_index);
+                                mark_nodes_as_deleted(next_node_index,
+                                                      cur_node_index);
                             }
                         } else {
                             strong_pruning_payoff[cur_node_index] += next_payoff;
@@ -1409,7 +1441,7 @@ namespace cluster_approx {
             }
         }
 
-        int find_best_component_root(int component_index){
+        int find_best_component_root(int component_index) {
             int cur_best_root_index = final_components[component_index][0];
             strong_pruning_from(cur_best_root_index, false);
             double cur_best_value = strong_pruning_payoff[cur_best_root_index];
@@ -1417,7 +1449,8 @@ namespace cluster_approx {
             stack2.resize(0);
             for (size_t ii = 0;
                  ii < phase3_neighbors[cur_best_root_index].size(); ++ii) {
-                stack2.push_back(phase3_neighbors[cur_best_root_index][ii].first);
+                stack2.push_back(
+                        phase3_neighbors[cur_best_root_index][ii].first);
             }
 
             while (!stack2.empty()) {
@@ -1427,8 +1460,9 @@ namespace cluster_approx {
                 double parent_edge_cost = strong_pruning_parent[cur_node_index].second;
                 double parent_val_without_cur_node =
                         strong_pruning_payoff[cur_parent_index];
-                double cur_node_net_payoff = strong_pruning_payoff[cur_node_index]
-                                             - parent_edge_cost;
+                double cur_node_net_payoff =
+                        strong_pruning_payoff[cur_node_index]
+                        - parent_edge_cost;
                 if (cur_node_net_payoff > 0.0) {
                     parent_val_without_cur_node -= cur_node_net_payoff;
                 }
@@ -1454,7 +1488,7 @@ namespace cluster_approx {
         }
 
         void build_phase1_node_set(const std::vector<int> &edge_set,
-                                   std::vector<int> *node_set){
+                                   std::vector<int> *node_set) {
             std::vector<int> included(prizes.size(), false);
             node_set->clear();
             for (size_t ii = 0; ii < edge_set.size(); ++ii) {
@@ -1476,7 +1510,7 @@ namespace cluster_approx {
             }
         }
 
-        void build_phase3_node_set(std::vector<int> *node_set){
+        void build_phase3_node_set(std::vector<int> *node_set) {
             node_set->clear();
             for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
                 if (!node_deleted[ii] && node_good[ii]) {
@@ -1485,7 +1519,7 @@ namespace cluster_approx {
             }
         }
 
-        void build_phase2_node_set(std::vector<int> *node_set){
+        void build_phase2_node_set(std::vector<int> *node_set) {
             node_set->clear();
             for (int ii = 0; ii < static_cast<int>(prizes.size()); ++ii) {
                 if (node_good[ii]) {
