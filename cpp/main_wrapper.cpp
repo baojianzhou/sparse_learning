@@ -294,6 +294,7 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
      * args[7]: double  np.int32  -- regularization parameter
      * @return: (wt,losses)
      */
+    openblas_set_num_threads(1);
     if (self != nullptr) {
         cerr << "unknown error for no reason." << endl;
         return nullptr;

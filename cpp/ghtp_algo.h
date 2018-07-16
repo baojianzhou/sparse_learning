@@ -57,6 +57,7 @@ extern inline void log_logistic(const double *x, double *out, int x_len) {
 void logistic_loss_grad(const double *w, const double *x,
                         const double *y, double *loss_grad,
                         double eta, int n_samples, int n_features) {
+    openblas_set_num_threads(1);
     int i, n = n_samples, p = n_features;
     double intercept = w[p], sum_z0 = 0.0;
     loss_grad[0] = 0.0;
@@ -120,6 +121,7 @@ void argsort(double *w, int s, int p, int *set_s) {
 void min_f(const int *set_s, const double *x_tr,
            const double *y_tr, int max_iter, double eta, double *wt,
            int n, int p, int set_s_len) {
+    openblas_set_num_threads(1);
     int i;
     auto *loss_grad = (double *) malloc((p + 2) * sizeof(double));
     auto *tmp_loss_grad = (double *) malloc((p + 2) * sizeof(double));
