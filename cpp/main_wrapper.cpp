@@ -334,10 +334,6 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
     for (int tt = 0; tt < max_iter; tt++) {
         logistic_loss_grad(wt, x_tr, y_tr, loss_grad, eta, n, p);
         losses[tt] = loss_grad[0];
-        double norm_grad = 0.0;
-        for (i = 0; i < p; i++) {
-            norm_grad += loss_grad[i + 1] * loss_grad[i + 1];
-        }
         cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
         cblas_daxpy(p + 1, -lr, loss_grad + 1, 1, wt_tmp, 1);
         argsort(wt_tmp, sparsity, p, set_s);
@@ -372,7 +368,6 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
 }
 
 static PyObject *graph_ghtp_logistic(PyObject *self, PyObject *args) {
-    //x_tr, y_tr, w0, lr, sparsity, tol, maximal_iter, eta
     /**
      * Gradient Hard Thresholding
      * DO NOT call this function directly, use the Python Wrapper instead.
@@ -387,51 +382,125 @@ static PyObject *graph_ghtp_logistic(PyObject *self, PyObject *args) {
      * args[7]: double  np.int32  -- regularization parameter
      * @return: (wt,losses)
      */
+    openblas_set_num_threads(1);
     if (self != nullptr) {
         cerr << "unknown error for no reason." << endl;
         return nullptr;
     }
-    PyArrayObject *x_tr_, *y_tr_, *w0_;
-    int n, p, k, max_iter, i, j;
+    PyArrayObject *x_tr_, *y_tr_, *w0_, *edges_, *edge_weights_;
+    int n, p, sparsity, max_iter, i, j;
     double eta, tol, lr;
-    if (!PyArg_ParseTuple(args, "O!O!O!didid",
+    int g, s, root, max_iter_g, verbose;
+    double budget, nu, delta, epsilon, err_tol;
+    char *pruning;
+    if (!PyArg_ParseTuple(args, "O!O!O!dididO!O!iidddidizdi",
                           &PyArray_Type, &x_tr_,
                           &PyArray_Type, &y_tr_,
                           &PyArray_Type, &w0_,
-                          &lr, &k, &tol, &max_iter, &eta)) { return nullptr; }
+                          &lr, &sparsity, &tol, &max_iter, &eta,
+                          &PyArray_Type, &edges_,
+                          &PyArray_Type, &edge_weights_,
+                          &g, &s, &budget, &nu, &delta, &max_iter_g, &err_tol,
+                          &root, &pruning, &epsilon, &verbose)) {
+        return nullptr;
+    }
     n = (int) (x_tr_->dimensions[0]);     // number of samples
     p = (int) (x_tr_->dimensions[1]);     // number of features
-    auto *x = (double *) malloc(n * p * sizeof(double));
-    auto *y = (double *) malloc(n * sizeof(double));
-    auto *wt = (double *) malloc(p * sizeof(double));
+    auto *x_tr = (double *) malloc(n * p * sizeof(double));
+    auto *y_tr = (double *) malloc(n * sizeof(double));
+    auto *wt = (double *) malloc((p + 1) * sizeof(double));
     for (i = 0; i < n; i++) {
         for (j = 0; j < p; j++) {
             auto *val = (double *) PyArray_GETPTR2(x_tr_, i, j);
-            x[i * p + j] = *val;
-            printf("%lf ", x[i * p + j]);
+            x_tr[i * p + j] = *val;
         }
         auto *val = (double *) PyArray_GETPTR1(y_tr_, i);
-        y[i] = *val;
-        printf("%lf \n", y[i]);
+        y_tr[i] = *val;
     }
-    printf("w0: ");
     for (i = 0; i < (p + 1); i++) {
         auto *val = (double *) PyArray_GETPTR1(w0_, i);
         wt[i] = *val;
-        printf(" %lf", wt[i]);
+    }
+    vector<pair<int, int> > edges;
+    vector<double> costs;
+    long m = edges_->dimensions[0];     // number of edges
+    for (i = 0; i < m; i++) {
+        auto *u = (int *) PyArray_GETPTR2(edges_, i, 0);
+        auto *v = (int *) PyArray_GETPTR2(edges_, i, 1);
+        pair<int, int> edge = std::make_pair(*u, *v);
+        edges.push_back(edge);
+        auto *wei = (double *) PyArray_GETPTR1(edge_weights_, i);
+        costs.push_back(*wei + budget / s);
     }
 
-
+    //////////////////////// graph-structured ghtp //////////////////////////
+    auto *loss_grad = (double *) malloc((p + 2) * sizeof(double));
+    auto *wt_tmp = (double *) malloc((p + 1) * sizeof(double));
+    auto *losses = (double *) malloc((max_iter) * sizeof(double));
+    for (int tt = 0; tt < max_iter; tt++) {
+        logistic_loss_grad(wt, x_tr, y_tr, loss_grad, eta, n, p);
+        losses[tt] = loss_grad[0];
+        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
+        cblas_daxpy(p + 1, -lr, loss_grad + 1, 1, wt_tmp, 1);
+        // head projection
+        vector<double> h_prizes;
+        for (i = 0; i < p; i++) {
+            h_prizes.push_back(wt_tmp[i] * wt_tmp[i]);
+        }
+        HeadApprox head(edges, costs, h_prizes, g, s, 2. * budget, delta,
+                        max_iter_g, err_tol, root, pruning, epsilon, verbose);
+        vector<int> h_nodes = head.run().first;
+        auto *set_s = (int *) malloc(h_nodes.size() * sizeof(int));
+        for (i = 0; i < h_nodes.size(); i++) {
+            set_s[i] = h_nodes[i];
+        }
+        min_f(set_s, x_tr, y_tr, 50, eta, wt, n, p, (int) (h_nodes.size()));
+        double norm_wt = 0.0;
+        for (i = 0; i < p + 1; i++) {
+            norm_wt += wt[i] * wt[i];
+        }
+        free(set_s);
+        // tail projection
+        vector<double> t_prizes;
+        double sum_t_prizes = 0.0;
+        for (i = 0; i < p; i++) {
+            t_prizes.push_back(wt[i] * wt[i]);
+            sum_t_prizes += t_prizes[i];
+        }
+        TailApprox tail(edges, costs, t_prizes, g, s, 2. * budget, nu,
+                        max_iter_g, err_tol, root, pruning, epsilon, verbose);
+        vector<int> t_nodes = tail.run().first;
+        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
+        cblas_dscal(p + 1, 0.0, wt, 1);
+        for (i = 0; i < t_nodes.size(); i++) {
+            wt[t_nodes[i]] = wt_tmp[t_nodes[i]];
+        }
+        wt[p] = wt_tmp[p];
+        if (tt >= 1 && (abs(losses[tt] - losses[tt - 1]) < tol)) {
+            break; // stop earlier when it almost stops decreasing the loss
+        }
+    }
+    /////////////////////////////////////////////////////////////////////////
     PyObject *results = PyTuple_New(3);
     PyObject *re_wt = PyList_New(p);
+    for (i = 0; i < p; i++) {
+        PyList_SetItem(re_wt, i, PyFloat_FromDouble(wt[i]));
+    }
     PyObject *re_intercept = PyList_New(1);
+    PyList_SetItem(re_intercept, 0, PyFloat_FromDouble(wt[p]));
     PyObject *re_losses = PyList_New(max_iter);
+    for (i = 0; i < max_iter; i++) {
+        PyList_SetItem(re_losses, i, PyFloat_FromDouble(losses[i]));
+    }
     PyTuple_SetItem(results, 0, re_wt);
     PyTuple_SetItem(results, 1, re_intercept);
     PyTuple_SetItem(results, 2, re_losses);
+    free(losses);
+    free(wt_tmp);
+    free(loss_grad);
     free(wt);
-    free(y);
-    free(x);
+    free(y_tr);
+    free(x_tr);
     return results;
 }
 
