@@ -310,40 +310,59 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
     }
     n = (int) (x_tr_->dimensions[0]);     // number of samples
     p = (int) (x_tr_->dimensions[1]);     // number of features
-    printf("n:%d, p:%d\n", n, p);
-    auto *x_tr = (double *) malloc(n * p * sizeof(double));
+    auto *x_tr = (double *) malloc(n * (p + 1) * sizeof(double));
     auto *y_tr = (double *) malloc(n * sizeof(double));
     auto *wt = (double *) malloc(p * sizeof(double));
     for (i = 0; i < n; i++) {
         for (j = 0; j < p; j++) {
             auto *val = (double *) PyArray_GETPTR2(x_tr_, i, j);
             x_tr[i * p + j] = *val;
-            printf("%lf ", x_tr[i * p + j]);
         }
         auto *val = (double *) PyArray_GETPTR1(y_tr_, i);
         y_tr[i] = *val;
-        printf("%lf \n", y_tr[i]);
     }
-    printf("w0: ");
     for (i = 0; i < (p + 1); i++) {
         auto *val = (double *) PyArray_GETPTR1(w0_, i);
         wt[i] = *val;
-        printf(" %lf", wt[i]);
     }
-    printf("lr:%lf, sparsity:%d, tol:%lf, maximal_iter:%d, eta:%lf\n",
-           lr, sparsity, tol, max_iter, eta);
 
     //////////////// gradient hard thresholding pursuit /////////////////////
-
+    auto *loss_grad = (double *) malloc((p + 2) * sizeof(double));
+    auto *wt_tmp = (double *) malloc((p + 1) * sizeof(double));
+    auto *set_s = (int *) malloc((sparsity + 1) * sizeof(int));
+    auto *losses = (double *) malloc((max_iter) * sizeof(double));
+    for (int tt = 0; tt < max_iter; tt++) {
+        loss_logistic_loss_grad(wt, x_tr, y_tr, loss_grad, eta, n, p);
+        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
+        cblas_daxpy(p + 1, -lr, loss_grad + 1, 1, wt_tmp, 1);
+        argsort(wt_tmp, sparsity, p + 1, set_s);
+        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
+        min_f(set_s, x_tr, y_tr, wt_tmp, max_iter, eta, wt, n, p, sparsity);
+        losses[tt] = loss_grad[0];
+        if (tt >= 1 && (abs(losses[tt] - losses[tt - 1]) < tol)) {
+            break; // stop earlier when it almost stops decreasing the loss
+        }
+        printf("losses[%d]: %lf\n", tt, losses[tt]);
+    }
     /////////////////////////////////////////////////////////////////////////
-
     PyObject *results = PyTuple_New(3);
     PyObject *re_wt = PyList_New(p);
+    for (i = 0; i < p; i++) {
+        PyList_SetItem(re_wt, i, PyFloat_FromDouble(wt[i]));
+    }
     PyObject *re_intercept = PyList_New(1);
+    PyList_SetItem(re_intercept, 0, PyFloat_FromDouble(wt[p]));
     PyObject *re_losses = PyList_New(max_iter);
+    for (i = 0; i < max_iter; i++) {
+        PyList_SetItem(re_losses, i, PyFloat_FromDouble(losses[i]));
+    }
     PyTuple_SetItem(results, 0, re_wt);
     PyTuple_SetItem(results, 1, re_intercept);
     PyTuple_SetItem(results, 2, re_losses);
+    free(losses);
+    free(set_s);
+    free(wt);
+    free(loss_grad);
     free(wt);
     free(y_tr);
     free(x_tr);
@@ -468,5 +487,14 @@ PyMODINIT_FUNC initproj_module() {
 #endif
 
 int main() {
-    printf("test");
+    int s = 3;
+    int w_len = 5;
+    auto *w = (double *) malloc(sizeof(double) * w_len);
+    w[0] = -1.;
+    w[1] = 1.;
+    w[2] = 3.;
+    w[3] = -2.;
+    w[4] = 3.;
+    auto *set_s = (int *) malloc(sizeof(int) * s);
+    argsort(w, s, 5, set_s);
 }

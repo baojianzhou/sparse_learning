@@ -5,7 +5,7 @@ import numpy as np
 try:
     from proj_module import proj_pcst
 except ImportError:
-    print('cannot find this functions: proj_pcst')
+    print('cannot find this function: proj_pcst')
     exit(0)
 
 
