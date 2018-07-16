@@ -310,7 +310,6 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
     }
     n = (int) (x_tr_->dimensions[0]);     // number of samples
     p = (int) (x_tr_->dimensions[1]);     // number of features
-    printf("n:%d p:%d\n", n, p);
     auto *x_tr = (double *) malloc(n * p * sizeof(double));
     auto *y_tr = (double *) malloc(n * sizeof(double));
     auto *wt = (double *) malloc((p + 1) * sizeof(double));
@@ -326,29 +325,25 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
         auto *val = (double *) PyArray_GETPTR1(w0_, i);
         wt[i] = *val;
     }
-
     //////////////// gradient hard thresholding pursuit /////////////////////
     auto *loss_grad = (double *) malloc((p + 2) * sizeof(double));
     auto *wt_tmp = (double *) malloc((p + 1) * sizeof(double));
-    auto *set_s = (int *) malloc((sparsity + 1) * sizeof(int));
+    auto *set_s = (int *) malloc((sparsity) * sizeof(int));
     auto *losses = (double *) malloc((max_iter) * sizeof(double));
-    double norm_grad = 0.0;
     for (int tt = 0; tt < max_iter; tt++) {
-        loss_logistic_loss_grad(wt, x_tr, y_tr, loss_grad, eta, n, p);
-        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
-        cblas_daxpy(p + 1, -lr, loss_grad + 1, 1, wt_tmp, 1);
-        argsort(wt_tmp, sparsity, p + 1, set_s);
-        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
-        min_f(set_s, x_tr, y_tr, wt_tmp, max_iter, eta, wt, n, p, sparsity);
+        logistic_loss_grad(wt, x_tr, y_tr, loss_grad, eta, n, p);
         losses[tt] = loss_grad[0];
-        if (tt >= 1 && (abs(losses[tt] - losses[tt - 1]) < tol)) {
-            break; // stop earlier when it almost stops decreasing the loss
-        }
+        double norm_grad = 0.0;
         for (i = 0; i < p; i++) {
             norm_grad += loss_grad[i + 1] * loss_grad[i + 1];
         }
-        printf("losses[%d]: %lf, grad:[%d]: %lf\n",
-               tt, losses[tt], tt, sqrt(norm_grad));
+        cblas_dcopy(p + 1, wt, 1, wt_tmp, 1);
+        cblas_daxpy(p + 1, -lr, loss_grad + 1, 1, wt_tmp, 1);
+        argsort(wt_tmp, sparsity, p, set_s);
+        min_f(set_s, x_tr, y_tr, 50, eta, wt, n, p, sparsity);
+        if (tt >= 1 && (abs(losses[tt] - losses[tt - 1]) < tol)) {
+            break; // stop earlier when it almost stops decreasing the loss
+        }
     }
     /////////////////////////////////////////////////////////////////////////
     PyObject *results = PyTuple_New(3);
@@ -367,7 +362,7 @@ static PyObject *ghtp_logistic(PyObject *self, PyObject *args) {
     PyTuple_SetItem(results, 2, re_losses);
     free(losses);
     free(set_s);
-    free(wt);
+    free(wt_tmp);
     free(loss_grad);
     free(wt);
     free(y_tr);
