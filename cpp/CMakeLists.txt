@@ -8,7 +8,7 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fPIC -fpermissive -std=c++11 -lpython2.7 -ffast-math")
-set(OPENBLAS_INCLUDE_DIR "/network/rit/lab/ceashpc/bz383376/opt/openblas-0.3.1/")
+set(OPENBLAS_INCLUDE_DIR "/network/rit/lab/ceashpc/bz383376/opt/openblas-0.3.1/include")
 set(OPENBLAS_INCLUDE "/network/rit/lab/ceashpc/bz383376/opt/openblas-0.3.1/include")
 set(OPENBLAS_LIB "/network/rit/lab/ceashpc/bz383376/opt/openblas-0.3.1/lib")
 # Find necessary packages
