@@ -120,7 +120,7 @@ void argsort(double *w, int s, int p, int *set_s) {
 void min_f(const int *set_s, const double *x_tr,
            const double *y_tr, int max_iter, double eta, double *wt,
            int n, int p, int set_s_len) {
-    int i, j;
+    int i;
     auto *loss_grad = (double *) malloc((p + 2) * sizeof(double));
     auto *tmp_loss_grad = (double *) malloc((p + 2) * sizeof(double));
     auto *wt_tmp = (double *) malloc((p + 1) * sizeof(double));
