@@ -19,7 +19,7 @@ include_directories(${OPENBLAS_INCLUDE_DIR})
 
 add_executable(test_fast_pcst pcst_fast_test.cpp pcst_fast.h)
 add_executable(test_head_tail head_tail_test.cpp head_tail.h)
-add_executable(test_main_wrapper main_wrapper.cpp head_tail.h)
+add_executable(test_main_wrapper main_wrapper.cpp head_tail.h pcst_fast.h ghtp_algo.h)
 add_executable(test_union_find union_find_test.cpp union_find.h)
 add_executable(test_ghtp_algo ghtp_algo_test.cpp ghtp_algo.h)
 
