@@ -25,5 +25,5 @@ add_executable(test_ghtp_algo ghtp_algo_test.cpp ghtp_algo.h)
 
 add_library(proj_module SHARED head_tail.h pcst_fast.h main_wrapper.cpp union_find.h ghtp_algo.h)
 target_link_libraries(test_main_wrapper python2.7 -I${OPENBLAS_INCLUDE} -L${OPENBLAS_LIB} -lpython2.7 -lopenblas -lpthread)
-target_link_libraries(proj_module python2.7 -lm -lpython2.7 -lopenblas -lpthread)
+target_link_libraries(proj_module python2.7 -lm -I${OPENBLAS_INCLUDE} -L${OPENBLAS_LIB} -lpython2.7 -lopenblas -lpthread)
 target_link_libraries(test_ghtp_algo -I${OPENBLAS_INCLUDE} -L${OPENBLAS_LIB} -lm -lopenblas -lpthread)
