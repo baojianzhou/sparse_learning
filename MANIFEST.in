@@ -1,1 +1,1 @@
-include cpp/head_tail.h cpp/pcst_fast.h cpp/union_find.h cpp/ghtp_algo.h
+include c/fast_pcst.c c/fast_pcst.h c/head_tail_proj.c c/head_tail_proj.h
